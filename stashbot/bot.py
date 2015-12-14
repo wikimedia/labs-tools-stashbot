@@ -157,7 +157,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def _event_to_doc(self, conn, event):
         """Make an Elasticsearch document from an IRC event."""
         return {
-            'message': RE_STYLE.sub(event.arguments[0]),
+            'message': RE_STYLE.sub('', event.arguments[0]),
             '@timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
             'type': 'irc',
             'user': event.source,
