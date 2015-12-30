@@ -63,7 +63,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         conn.nick(nick + '_')
 
     def on_welcome(self, conn, event):
-        self.logger.debug('Connected to server')
+        self.logger.info('Connected to server %s', conn.get_server_name())
         if 'password' in self.config['irc']:
             self.logger.debug('Authenticating with Nickserv')
             conn.privmsg('NickServ', 'identify %s %s' % (
@@ -74,7 +74,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             conn.join(c)
 
     def on_join(self, conn, event):
-        self.logger.info('Joined channel %s', event.target)
+        self.logger.warning('Joined channel %s', event.target)
 
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
@@ -130,7 +130,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 doc['nick'] = nick
                 doc['msg'] = msg
         else:
-            self.logger.info(
+            self.logger.warning(
                 '!log message on unexpected channel %s', doc['channel'])
             self._respond(conn, event, 'Not expecting to hear !log here')
             return

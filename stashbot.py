@@ -24,12 +24,12 @@ import stashbot.config
 parser = argparse.ArgumentParser(description='Stashbot')
 parser.add_argument('-c', '--config',
     default='config.yaml', help='Configuration file')
-parser.add_argument('-v', '--verbose', action='store_const',
-    const=logging.DEBUG, default=logging.INFO, dest='loglevel',
-    help='Verbose output')
+parser.add_argument('-v', '--verbose', action='count',
+    default=0, dest='loglevel', help='Increase logging verbosity')
 args = parser.parse_args()
 
-logging.basicConfig(level=args.loglevel)
+logging.basicConfig(
+    level=max(logging.DEBUG, logging.WARNING - (10 * args.loglevel)))
 
 bot = stashbot.Stashbot(
     stashbot.config.load(args.config),
