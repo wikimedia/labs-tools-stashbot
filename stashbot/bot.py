@@ -93,6 +93,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         if msg.startswith('!bash '):
             doc = self._event_to_doc(conn, event)
             self.do_bash(conn, event, doc)
+        else:
+            conn.privmsg(event.target, event.arguments[0][::-1])
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
