@@ -79,7 +79,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
         doc = self._event_to_doc(conn, event)
-        self.do_logmsg(conn, event)
+        self.do_logmsg(conn, event, doc)
 
         # Look for special messages
         msg = event.arguments[0]
