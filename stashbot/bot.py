@@ -94,7 +94,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             doc = self._event_to_doc(conn, event)
             self.do_bash(conn, event, doc)
         else:
-            conn.privmsg(event.target, event.arguments[0][::-1])
+            self._respond(conn, event, event.arguments[0][::-1])
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
@@ -132,6 +132,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         else:
             self.logger.info(
                 '!log message on unexpected channel %s', doc['channel'])
+            self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
         self.es.index(
@@ -148,13 +149,18 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             index='bash', doc_type='bash', body=doc, consistency='one')
 
         if ret['_shards']['successful'] > 0:
-            conn.privmsg(
-                event.target,
+            self._respond(conn, event,
                 '%s: Stored quip at %s' % (
                     event.source.nick,
                     self.config['bash']['view_url'] % ret['_id']
                 )
             )
+
+    def _respond(self, conn, event, msg):
+        to = event.target
+        if to == self.connection.get_nickname():
+            to = event.source.nick
+        conn.privmsg(to, msg)
 
     def _event_to_doc(self, conn, event):
         """Make an Elasticsearch document from an IRC event."""
