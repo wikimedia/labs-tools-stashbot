@@ -159,13 +159,21 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         ret = self.es.index(
             index='bash', doc_type='bash', body=bash, consistency='one')
 
-        if ret['_shards']['successful'] > 0:
+        if 'created' in ret and ret['created'] == True:
             self._respond(conn, event,
                 '%s: Stored quip at %s' % (
                     event.source.nick,
                     self.config['bash']['view_url'] % ret['_id']
                 )
             )
+        else:
+            self.logger.error('Failed to save document: %s', ret)
+            self._respond(conn, event,
+                '%s: Yuck. Something blew up when I tried to save that.' % (
+                    event.source.nick,
+                )
+            )
+
 
     def _respond(self, conn, event, msg):
         to = event.target
