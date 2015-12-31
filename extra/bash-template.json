@@ -29,14 +29,11 @@
         "message" : { "type" : "string", "index" : "analyzed", "omit_norms" : true },
         "@timestamp" : { "type" : "date", "index" : "not_analyzed" },
         "type" : { "type" : "string", "index" : "not_analyzed" },
-        "user" : { "type" : "string", "index" : "not_analyzed" },
-        "channel" : { "type" : "string", "index" : "not_analyzed" },
         "nick" : { "type" : "string", "index" : "not_analyzed" },
-        "server" : { "type" : "string", "index" : "not_analyzed" },
-        "host" : { "type" : "string", "index" : "not_analyzed" },
         "up_vote" : { "type" : "integer", "index" : "no" },
         "down_vote" : { "type" : "integer", "index" : "no" },
-        "score" : { "type" : "float" }
+        "score" : { "type" : "float" },
+        "tags" : { "type" : "string", "index" : "not_analyzed", "index_name" : "tag" }
       }
     }
   }

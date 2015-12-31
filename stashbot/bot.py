@@ -108,48 +108,56 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def do_banglog(self, conn, event, doc):
         """Process a !log message"""
+        bang = dict(doc)
         # Trim '!log ' from the front of the message
-        msg = doc['message'][5:]
-        doc['type'] = 'sal'
+        msg = bang['message'][5:]
+        bang['type'] = 'sal'
 
-        if doc['channel'] == '#wikimedia-labs':
+        if bang['channel'] == '#wikimedia-labs':
             project, msg = msg.split(None, 1)
-            doc['project'] = project
-            doc['message'] = msg
-        elif doc['channel'] == '#wikimedia-releng':
-            doc['project'] = 'releng'
-            doc['message'] = msg
-        elif doc['channel'] == '#wikimedia-analytics':
-            doc['project'] = 'analytics'
-            doc['message'] = msg
-        elif doc['channel'] == '#wikimedia-operations':
-            doc['project'] = 'production'
-            doc['message'] = msg
-            if doc['nick'] == 'logmsgbot':
+            bang['project'] = project
+            bang['message'] = msg
+        elif bang['channel'] == '#wikimedia-releng':
+            bang['project'] = 'releng'
+            bang['message'] = msg
+        elif bang['channel'] == '#wikimedia-analytics':
+            bang['project'] = 'analytics'
+            bang['message'] = msg
+        elif bang['channel'] == '#wikimedia-operations':
+            bang['project'] = 'production'
+            bang['message'] = msg
+            if bang['nick'] == 'logmsgbot':
                 nick, msg = msg.split(None, 1)
-                doc['nick'] = nick
-                doc['msg'] = msg
+                bang['nick'] = nick
+                bang['msg'] = msg
         else:
             self.logger.warning(
-                '!log message on unexpected channel %s', doc['channel'])
+                '!log message on unexpected channel %s', bang['channel'])
             self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
         self.es.index(
-            index='sal', doc_type='sal', body=doc, consistency='one')
+            index='sal', doc_type='sal', body=bang, consistency='one')
 
     def do_bash(self, conn, event, doc):
         """Process a !bash message"""
+        bash = dict(doc)
         # Trim '!bash ' from the front of the message
-        msg = doc['message'][6:]
-        doc['type'] = 'bash'
-        doc['message'] = msg.replace("\t", "\n").strip()
-        doc['up_votes'] = 0
-        doc['down_votes'] = 0
-        doc['score'] = 0
+        msg = bash['message'][6:]
+        # Expand tabs to line breaks
+        bash['message'] = msg.replace("\t", "\n").strip()
+        bash['type'] = 'bash'
+        bash['up_votes'] = 0
+        bash['down_votes'] = 0
+        bash['score'] = 0
+        # Remove unneeded irc fields
+        del bash['user']
+        del bash['channel']
+        del bash['server']
+        del bash['host']
 
         ret = self.es.index(
-            index='bash', doc_type='bash', body=doc, consistency='one')
+            index='bash', doc_type='bash', body=bash, consistency='one')
 
         if ret['_shards']['successful'] > 0:
             self._respond(conn, event,
