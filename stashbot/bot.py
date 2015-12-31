@@ -144,6 +144,9 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         msg = doc['message'][6:]
         doc['type'] = 'bash'
         doc['message'] = msg.replace("\t", "\n").strip()
+        doc['up_votes'] = 0
+        doc['down_votes'] = 0
+        doc['score'] = 0
 
         ret = self.es.index(
             index='bash', doc_type='bash', body=doc, consistency='one')
