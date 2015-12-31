@@ -1,0 +1,43 @@
+{
+  "template" : "bash",
+  "order" : 99,
+  "settings" : {
+    "number_of_shards" : 1,
+    "number_of_replicas" : 2,
+    "index.cache.field.type" : "soft",
+    "index.refresh_interval" : "5s",
+    "analysis" : {
+      "analyzer" : {
+        "default" : {
+          "type" : "standard",
+          "stopwords" : "_none_"
+        }
+      }
+    }
+  },
+  "mappings" : {
+    "bash" : {
+      "_all" : { "enabled" : false },
+      "dynamic_templates" : [ {
+        "string_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "string",
+          "mapping" : { "type" : "string", "index" : "analyzed", "omit_norms" : true }
+        }
+      } ],
+      "properties" : {
+        "message" : { "type" : "string", "index" : "analyzed", "omit_norms" : true },
+        "@timestamp" : { "type" : "date", "index" : "not_analyzed" },
+        "type" : { "type" : "string", "index" : "not_analyzed" },
+        "user" : { "type" : "string", "index" : "not_analyzed" },
+        "channel" : { "type" : "string", "index" : "not_analyzed" },
+        "nick" : { "type" : "string", "index" : "not_analyzed" },
+        "server" : { "type" : "string", "index" : "not_analyzed" },
+        "host" : { "type" : "string", "index" : "not_analyzed" },
+        "up_vote" : { "type" : "integer", "index" : "no" },
+        "down_vote" : { "type" : "integer", "index" : "no" },
+        "score" : { "type" : "long" }
+      }
+    }
+  }
+}
