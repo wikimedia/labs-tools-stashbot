@@ -29,7 +29,10 @@ parser.add_argument('-v', '--verbose', action='count',
 args = parser.parse_args()
 
 logging.basicConfig(
-    level=max(logging.DEBUG, logging.WARNING - (10 * args.loglevel)))
+    level=max(logging.DEBUG, logging.WARNING - (10 * args.loglevel)),
+    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
+    datefmt='%Y-%m-%dT%H:%M:%SZ'
+)
 
 bot = stashbot.Stashbot(
     stashbot.config.load(args.config),
