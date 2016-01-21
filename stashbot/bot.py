@@ -129,7 +129,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             if bang['nick'] == 'logmsgbot':
                 nick, msg = msg.split(None, 1)
                 bang['nick'] = nick
-                bang['msg'] = msg
+                bang['message'] = msg
         else:
             self.logger.warning(
                 '!log message on unexpected channel %s', bang['channel'])
