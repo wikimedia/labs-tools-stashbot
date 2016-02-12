@@ -24,7 +24,8 @@ import irc.client
 import irc.strings
 import re
 import time
-import .phab
+
+from . import phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
 RE_PHAB = re.compile(r'\b(T\d+)\b')
@@ -155,13 +156,13 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 link = self.config['sal']['view_url'] % ret['_id']
                 msg = "[[%s|SAL entry]]:\n %s %s %s" %(
                     link,
-                    bash['@timestamp'],
-                    bash['nick'],
-                    bash['message'],
+                    bang['@timestamp'],
+                    bang['nick'],
+                    bang['message'],
                 )
                 try:
                     self.phab.comment(task, msg)
-                except e:
+                except:
                     self.logger.exception('Failed to add note to phab task')
 
     def do_bash(self, conn, event, doc):

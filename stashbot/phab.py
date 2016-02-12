@@ -70,7 +70,7 @@ class Client(object):
         return resp['result']
 
     def taskInfo(self, task):
-        r = client.post('phid.lookup', {'names': [task]})
+        r = self.post('phid.lookup', {'names': [task]})
         if task in r:
             return r[task]
         raise Exception('Task %s not found' % task)
