@@ -24,8 +24,10 @@ import irc.client
 import irc.strings
 import re
 import time
+import .phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
+RE_PHAB = re.compile(r'\b(T\d+)\b')
 
 class Stashbot(irc.bot.SingleServerIRCBot):
     def __init__(self, config, logger):
@@ -40,6 +42,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         self.es = elasticsearch.Elasticsearch(
             self.config['elasticsearch']['servers'],
             **self.config['elasticsearch']['options']
+        )
+
+        self.phab = phab.Client(
+            self.config['phab']['url'],
+            self.config['phab']['user'],
+            self.config['phab']['cert']
         )
 
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
@@ -136,8 +144,25 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
-        self.es.index(
+        ret = self.es.index(
             index='sal', doc_type='sal', body=bang, consistency='one')
+
+        if (self.config['sal']['use_phab'] and
+            'created' in ret and ret['created'] == True
+        ):
+            m = RE_PHAB.findall(bang['message'])
+            for task in m:
+                link = self.config['sal']['view_url'] % ret['_id']
+                msg = "[[%s|SAL entry]]:\n %s %s %s" %(
+                    link,
+                    bash['@timestamp'],
+                    bash['nick'],
+                    bash['message'],
+                )
+                try:
+                    self.phab.comment(task, msg)
+                except e:
+                    self.logger.exception('Failed to add note to phab task')
 
     def do_bash(self, conn, event, doc):
         """Process a !bash message"""
