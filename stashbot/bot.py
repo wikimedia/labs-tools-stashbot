@@ -148,18 +148,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         ret = self.es.index(
             index='sal', doc_type='sal', body=bang, consistency='one')
 
-        if (self.config['sal']['use_phab'] and
+        if ('phab' in self.config['sal'] and
             'created' in ret and ret['created'] == True
         ):
             m = RE_PHAB.findall(bang['message'])
+            msg = self.config['sal']['phab'] % dict(
+                {'href': self.config['sal']['view_url'] % ret['_id']},
+                **bang
+            )
             for task in m:
-                link = self.config['sal']['view_url'] % ret['_id']
-                msg = "[[%s|SAL entry]]:\n %s %s %s" %(
-                    link,
-                    bang['@timestamp'],
-                    bang['nick'],
-                    bang['message'],
-                )
                 try:
                     self.phab.comment(task, msg)
                 except:

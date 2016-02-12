@@ -61,7 +61,7 @@ bash:
 
 sal:
   view_url: https://tools.wmflabs.org/sal/log/%s
-  use_phab: true
+  phab: "{nav icon=file, name=Mentioned in SAL, href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
 ```
 
 Operating the bot
