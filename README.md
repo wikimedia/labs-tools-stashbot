@@ -49,6 +49,19 @@ elasticsearch:
       - my-es-password
     sniff_on_start: false
     sniff_on_connection_fail: false
+  index: 'irc-%Y.%m'
+
+phab:
+  url: https://phabricator.wikimedia.org
+  user: MyPhabUser
+  cert: biglongcerthash
+
+bash:
+  view_url: https://tools.wmflabs.org/bash/quip/%s
+
+sal:
+  view_url: https://tools.wmflabs.org/sal/log/%s
+  use_phab: true
 ```
 
 Operating the bot
