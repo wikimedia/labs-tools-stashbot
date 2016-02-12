@@ -1,3 +1,15 @@
 *.pyc
+/.bash_history
+/.lesshst
+/.viminfo
+/access.log
+/archive
+/config-test.yaml
 /config.yaml
+/error.log
+/replica.my.cnf
+/service.log
+/service.manifest
+/stashbot.err
+/stashbot.out
 /virtenv
