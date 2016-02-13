@@ -2,3 +2,6 @@ elasticsearch>=1.0.0,<2.0.0
 irc
 pyyaml
 requests[security]
+pyopenssl
+ndg-httpsclient
+pyasn1
