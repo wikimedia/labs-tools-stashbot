@@ -29,6 +29,7 @@ from . import phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
 RE_PHAB = re.compile(r'\b(T\d+)\b')
+RE_PHAB_NOURL = re.compile(r'(?:[^/])\b([DMPT]\d+)\b')
 
 class Stashbot(irc.bot.SingleServerIRCBot):
     def __init__(self, config, logger):
@@ -94,8 +95,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         msg = event.arguments[0]
         if msg.startswith('!log '):
             self.do_banglog(conn, event, doc)
+
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
+
+        elif self.config['phab']['echo'] and RE_PHAB_NOURL.match(msg):
+            self.do_phabecho(conn, event, doc)
 
     def on_privmsg(self, conn, event):
         msg = event.arguments[0]
@@ -197,6 +202,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 )
             )
 
+    def do_phabecho(self, conn, event, doc):
+        """Give links to Phabricator tasks"""
+        for task in RE_PHAB_NOURL.findall(doc['message']):
+            try:
+                info = self.taskInfo(task)
+            except:
+                self.logger.exception('Failed to lookup info for %s', task)
+            else:
+                self._respond(conn, event, self.config['phab']['echo'] % info)
 
     def _respond(self, conn, event, msg):
         to = event.target
