@@ -72,10 +72,10 @@ Operating the bot
 -----------------
 ```
 # Start the bot
-$ ./start.sh
+$ ./stashbot.sh start
 
 # Stop the bot
-$ qdel $(job stashbot)
+$ ./stashbot.sh stop
 ```
 
 Running with Docker
