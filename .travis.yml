@@ -6,9 +6,3 @@ install:
     - pip install tox --use-mirrors
 script:
     - tox
-notifications:
-  irc:
-    channels:
-      - 'chat.freenode.net##stashbot'
-    template:
-       - "%{repository}#%{build_number} (%{branch} - %{commit} %{author}): %{message} - %{build_url}"
