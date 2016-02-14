@@ -84,7 +84,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.logger.debug('Joining %s', c)
             conn.join(c)
 
-    def on_join(self, conn, event):
+    def on_topic(self, conn, event):
         self.logger.warning('Joined channel %s', event.target)
 
     def on_pubmsg(self, conn, event):
