@@ -23,8 +23,14 @@ _get_job_id() {
 case "$1" in
     start)
         echo "Starting stashbot..."
-        jsub -once -continuous -stderr -mem $MEM -l release=$REL -N $JOB -- \
+        jsub -once -continuous -stderr -mem $MEM -l release=$REL -N $JOB \
             ${TOOL_DIR}/stashbot.sh run
+        ;;
+    run)
+        date +%Y-%m-%dT%H:%M:%S
+        echo "Running stashbot..."
+        cd ${TOOL_DIR}
+        exec python ./stashbot.py
         ;;
     stop)
         echo "Stopping stashbot..."
