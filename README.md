@@ -36,6 +36,9 @@ irc:
   channels:
     - '##somechan'
     - '##anotherchan'
+  ignore:
+    - nick1
+    - nick2
 
 elasticsearch:
   servers:

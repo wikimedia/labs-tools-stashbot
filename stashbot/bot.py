@@ -91,7 +91,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
         # Look for special messages
         msg = event.arguments[0]
-        if msg.startswith('!log '):
+        if ('ignore' in self.config['irc'] and
+            doc['nick'] in self.config['irc']['ignore']
+        ):
+            pass
+
+        elif msg.startswith('!log '):
             self.do_banglog(conn, event, doc)
 
         elif msg.startswith('!bash '):
