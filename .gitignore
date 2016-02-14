@@ -1,6 +1,7 @@
 *.pyc
 /.bash_history
 /.lesshst
+/.tox
 /.viminfo
 /access.log
 /archive

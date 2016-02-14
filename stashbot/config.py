@@ -18,14 +18,17 @@
 
 import yaml
 
+
 def yaml_unicode_str(self, node):
     """Create unicode objects for YAML string nodes."""
     # From http://stackoverflow.com/a/2967461/8171
     return self.construct_scalar(node)
 
+
 # Attach custom unicode factory to string events
 yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', yaml_unicode_str)
 yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str', yaml_unicode_str)
+
 
 def load(filename):
     return yaml.load(open(filename, 'r'))

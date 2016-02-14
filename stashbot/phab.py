@@ -22,6 +22,7 @@ import json
 import requests
 import time
 
+
 class Client(object):
     """Phabricator client"""
     def __init__(self, url, username, certificate):
@@ -41,7 +42,7 @@ class Client(object):
             'authSignature': sig,
         }
 
-        r = requests.post( '%s/api/conduit.connect' % self.url, data={
+        r = requests.post('%s/api/conduit.connect' % self.url, data={
             'params': json.dumps(data),
             'output': 'json',
             '__conduit__': True,
@@ -60,7 +61,7 @@ class Client(object):
         if self.session is None:
             self.session = self.getSessionKey()
         data['__conduit__'] = self.session
-        r = requests.post( '%s/api/%s' % (self.url, path), data={
+        r = requests.post('%s/api/%s' % (self.url, path), data={
             'params': json.dumps(data),
             'output': 'json',
         })
