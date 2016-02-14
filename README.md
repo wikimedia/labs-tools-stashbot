@@ -55,7 +55,7 @@ phab:
   url: https://phabricator.wikimedia.org
   user: MyPhabUser
   cert: biglongcerthash
-  echo: "%(name)s: %(fullName)s - %(uri)s"
+  echo: "%(fullName)s - %(uri)s"
 
 bash:
   view_url: https://tools.wmflabs.org/bash/quip/%s

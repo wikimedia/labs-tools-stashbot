@@ -3,4 +3,4 @@
 # ends up running on. It is not designed to just 'be run'.
 
 source ./virtenv/bin/activate
-python ./stashbot.py "$*"
+python ./stashbot.py
