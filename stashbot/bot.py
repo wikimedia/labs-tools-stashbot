@@ -30,7 +30,7 @@ from . import phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
 RE_PHAB = re.compile(r'\b(T\d+)\b')
-RE_PHAB_NOURL = re.compile(r'(?:^|[^/])([DMPT]\d+)\b')
+RE_PHAB_NOURL = re.compile(r'(?:^|[^/])\b([DMPT]\d+)\b')
 
 
 class Stashbot(irc.bot.SingleServerIRCBot):
