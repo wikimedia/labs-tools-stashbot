@@ -155,7 +155,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     'Please !log in #wikimedia-releng for beta cluster SAL'
                 )
 
-
         elif bang['channel'] == '#wikimedia-releng':
             bang['project'] = 'releng'
             bang['message'] = msg
