@@ -55,6 +55,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         )
 
         self.ldap = ldap.initialize(self.config['ldap']['uri'])
+        self.projects = None
 
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
         # yucky and full of legacy encoding issues that should not crash my
@@ -196,10 +197,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def _getProjects(self):
         """Get a list of valid Labs projects"""
-        if self.projects is None or self.projects[0] + 300 > time.time():
+        if self.projects and self.projects[0] + 300 > time.time():
+            # Expire cache
+            self.projects = None
+
+        if self.projects is None:
             projects = self._getLdapNames('projects')
             servicegroups = self._getLdapNames('servicegroups')
             self.projects = (time.time(), projects + servicegroups)
+
         return self.projects[1]
 
     def _getLdapNames(self, ou):
