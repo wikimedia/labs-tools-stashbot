@@ -259,7 +259,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def do_phabecho(self, conn, event, doc):
         """Give links to Phabricator tasks"""
-        for task in RE_PHAB_NOURL.findall(doc['message']):
+        for task in set(RE_PHAB_NOURL.findall(doc['message'])):
             try:
                 info = self.phab.taskInfo(task)
             except:
