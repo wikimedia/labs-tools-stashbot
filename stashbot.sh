@@ -78,8 +78,8 @@ case "$1" in
         echo "Updating git clone..."
         cd ${TOOL_DIR}
         git fetch &&
-            git log --stat HEAD..@{upstream} &&
-            git rebase @{upstream}
+        git --no-pager log --stat HEAD..@{upstream} &&
+        git rebase @{upstream}
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|status|tail|logrotate|update}"
