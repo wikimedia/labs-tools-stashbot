@@ -54,6 +54,10 @@ elasticsearch:
     sniff_on_connection_fail: false
   index: 'irc-%Y.%m'
 
+ldap:
+  uri: ldap://ldap-labs.eqiad.wikimedia.org:389
+  base: dc=wikimedia,dc=org
+
 phab:
   url: https://phabricator.wikimedia.org
   user: MyPhabUser

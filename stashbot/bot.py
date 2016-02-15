@@ -22,6 +22,7 @@ import irc.bot
 import irc.buffer
 import irc.client
 import irc.strings
+import ldap
 import re
 import time
 
@@ -52,6 +53,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.config['phab']['user'],
             self.config['phab']['cert']
         )
+
+        self.ldap = ldap.initialize(self.config['ldap']['uri'])
 
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
         # yucky and full of legacy encoding issues that should not crash my
@@ -134,12 +137,33 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             project, msg = msg.split(None, 1)
             bang['project'] = project
             bang['message'] = msg
+            if project not in self._getProjects():
+                self.logger.warning('Invalid project %s', project)
+                tool = 'tools.%s' % project
+                if tool in self._getProjects():
+                    self._respond(
+                        conn,
+                        event,
+                        'Did you mean %s instead of %s?' % (tool, project)
+                    )
+                return
+
+            if project == 'deployment-prep':
+                self._respond(
+                    conn,
+                    event,
+                    'Please !log in #wikimedia-releng for beta cluster SAL'
+                )
+
+
         elif bang['channel'] == '#wikimedia-releng':
             bang['project'] = 'releng'
             bang['message'] = msg
+
         elif bang['channel'] == '#wikimedia-analytics':
             bang['project'] = 'analytics'
             bang['message'] = msg
+
         elif bang['channel'] == '#wikimedia-operations':
             bang['project'] = 'production'
             bang['message'] = msg
@@ -147,6 +171,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 nick, msg = msg.split(None, 1)
                 bang['nick'] = nick
                 bang['message'] = msg
+
         else:
             self.logger.warning(
                 '!log message on unexpected channel %s', bang['channel'])
@@ -169,6 +194,28 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     self.phab.comment(task, msg)
                 except:
                     self.logger.exception('Failed to add note to phab task')
+
+    def _getProjects(self):
+        """Get a list of valid Labs projects"""
+        if self.projects is None or self.projects[0] + 300 > time.time():
+            projects = self._getLdapNames('projects')
+            servicegroups = self._getLdapNames('servicegroups')
+            self.projects = (time.time(), projects + servicegroups)
+        return self.projects[1]
+
+    def _getLdapNames(self, ou):
+        dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
+        data = self.ldap.search_s(
+            dn,
+            ldap.SCOPE_SUBTREE,
+            '(objectclass=groupofnames)',
+            attrlist=['cn']
+        )
+        if data:
+            return [g[1]['cn'][0] for g in data]
+        else:
+            self.logger.error('Failed to get LDAP data for %s', dn)
+            return []
 
     def do_bash(self, conn, event, doc):
         """Process a !bash message"""

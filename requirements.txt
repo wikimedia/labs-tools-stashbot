@@ -5,3 +5,4 @@ requests[security]
 pyopenssl
 ndg-httpsclient
 pyasn1
+python-ldap
