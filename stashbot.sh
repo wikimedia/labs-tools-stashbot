@@ -42,8 +42,10 @@ case "$1" in
         while true; do
             JID=$(_get_job_id)
             if [[ -n $JID ]]; then
+                echo -n "."
                 sleep 1
             else
+                echo
                 break
             fi
         done
