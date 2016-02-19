@@ -96,7 +96,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         # Look for special messages
         msg = event.arguments[0]
         if ('ignore' in self.config['irc'] and
-            doc['nick'] in self.config['irc']['ignore']
+            self._clean_nick(doc['nick']) in self.config['irc']['ignore']
         ):
             pass
 
@@ -221,6 +221,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         else:
             self.logger.error('Failed to get LDAP data for %s', dn)
             return []
+
+    def _clean_nick(self, nick):
+        """Remove common status indicators and normlize to lower case."""
+        return nick.split('|', 1)[0].rstrip('`_').lower()
 
     def do_bash(self, conn, event, doc):
         """Process a !bash message"""
