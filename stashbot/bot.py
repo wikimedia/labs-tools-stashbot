@@ -93,20 +93,20 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         doc = self._event_to_doc(conn, event)
         self.do_logmsg(conn, event, doc)
 
-        # Look for special messages
         msg = event.arguments[0]
         if ('ignore' in self.config['irc'] and
             self._clean_nick(doc['nick']) in self.config['irc']['ignore']
         ):
-            pass
+            return
 
-        elif msg.startswith('!log '):
+        # Look for special messages
+        if msg.startswith('!log '):
             self.do_banglog(conn, event, doc)
 
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
 
-        elif 'echo' in self.config['phab'] and RE_PHAB_NOURL.search(msg):
+        if 'echo' in self.config['phab'] and RE_PHAB_NOURL.search(msg):
             self.do_phabecho(conn, event, doc)
 
     def on_privmsg(self, conn, event):
