@@ -10,6 +10,8 @@ RUN apt-get update \
      -o Dpkg::Options::='--force-unsafe-io' \
      install --fix-broken --auto-remove --yes --quiet \
      python \
+     python-ldap \
+     python-openssl \
      python-pip \
      python-yaml \
   && DEBIAN_FRONTEND=noninteractive apt-get clean autoclean \
