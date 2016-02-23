@@ -3,8 +3,8 @@ Stashbot
 
 An IRC bot designed to store data in an Elasticsearch cluster.
 
-This bot was created to replace Logstash in an application stack that process
-IRC leg messages for:
+This bot was created to replace Logstash in an application stack that processes
+IRC messages for:
 
 - [quips](https://github.com/bd808/quips)
 - [SAL](https://github.com/bd808/SAL)
