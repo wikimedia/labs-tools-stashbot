@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Management script for atashbot SGE job
+# Management script for stashbot SGE job
 
 set -e
 
