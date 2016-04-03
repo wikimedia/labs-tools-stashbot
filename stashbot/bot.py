@@ -87,6 +87,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         for c in self.config['irc']['channels']:
             self.logger.info('Joining %s', c)
             conn.join(c)
+            time.sleep(1)
 
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
