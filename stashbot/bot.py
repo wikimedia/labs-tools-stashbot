@@ -131,11 +131,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_banglog(self, conn, event, doc):
         """Process a !log message"""
         bang = dict(doc)
+        channel = bang['channel']
         # Trim '!log ' from the front of the message
         msg = bang['message'][5:]
         bang['type'] = 'sal'
 
-        if bang['channel'] == '#wikimedia-labs':
+        if channel == '#wikimedia-labs':
             project, msg = msg.split(None, 1)
             bang['project'] = project
             bang['message'] = msg
@@ -157,15 +158,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     'Please !log in #wikimedia-releng for beta cluster SAL'
                 )
 
-        elif bang['channel'] == '#wikimedia-releng':
+        elif channel == '#wikimedia-releng':
             bang['project'] = 'releng'
             bang['message'] = msg
 
-        elif bang['channel'] == '#wikimedia-analytics':
+        elif channel == '#wikimedia-analytics':
             bang['project'] = 'analytics'
             bang['message'] = msg
 
-        elif bang['channel'] == '#wikimedia-operations':
+        elif channel in ['#wikimedia-operations', '#wikimedia-fundraising']:
             bang['project'] = 'production'
             bang['message'] = msg
             if bang['nick'] == 'logmsgbot':
@@ -175,7 +176,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
         else:
             self.logger.warning(
-                '!log message on unexpected channel %s', bang['channel'])
+                '!log message on unexpected channel %s', channel)
             self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
