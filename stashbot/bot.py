@@ -89,6 +89,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             conn.join(c)
             time.sleep(1)
 
+    def on_error(self, conn, event):
+        self.logger.warning('ERROR: %s' % event)
+
+    def on_privnotice(self, conn, event):
+        self.logger.warning('PRIVNOTICE: %s' % event)
+
+    def on_pubnotice(self, conn, event):
+        self.logger.warning('PUBNOTICE: %s' % event)
+
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
         doc = self._event_to_doc(conn, event)
