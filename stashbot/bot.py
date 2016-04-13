@@ -101,7 +101,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
         doc = self._event_to_doc(conn, event)
-        self.do_logmsg(conn, event, doc)"
+        self.do_logmsg(conn, event, doc)
 
         msg = event.arguments[0]
         if ('ignore' in self.config['irc'] and
