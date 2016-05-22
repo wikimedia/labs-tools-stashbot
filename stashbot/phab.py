@@ -25,41 +25,14 @@ import time
 
 class Client(object):
     """Phabricator client"""
-    def __init__(self, url, username, certificate):
+    def __init__(self, url, username, key):
         self.url = url
         self.username = username
-        self.certificate = certificate
-        self.session = None
-
-    def getSessionKey(self):
-        token = int(time.time())
-        sig = hashlib.sha1(str(token) + self.certificate).hexdigest()
-        data = {
-            'client': 'stashbot',
-            'clientVersion': 0,
-            'user': self.username,
-            'authToken': token,
-            'authSignature': sig,
-        }
-
-        r = requests.post('%s/api/conduit.connect' % self.url, data={
-            'params': json.dumps(data),
-            'output': 'json',
-            '__conduit__': True,
-        })
-        resp = r.json()
-        if resp['error_code'] is not None:
-            print resp
-            raise Exception(resp['error_info'])
-
-        return {
-            'sessionKey': resp['result']['sessionKey'],
-            'connectionID': resp['result']['connectionID'],
+        self.session = {
+            'token': key,
         }
 
     def post(self, path, data):
-        if self.session is None:
-            self.session = self.getSessionKey()
         data['__conduit__'] = self.session
         r = requests.post('%s/api/%s' % (self.url, path), data={
             'params': json.dumps(data),

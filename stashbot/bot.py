@@ -51,7 +51,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         self.phab = phab.Client(
             self.config['phab']['url'],
             self.config['phab']['user'],
-            self.config['phab']['cert']
+            self.config['phab']['key']
         )
 
         self.ldap = ldap.initialize(self.config['ldap']['uri'])
