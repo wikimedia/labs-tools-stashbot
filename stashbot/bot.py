@@ -116,7 +116,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
 
-        if 'echo' in self.config['phab'] and RE_PHAB_NOURL.search(msg):
+        if ('echo' in self.config['phab'] and RE_PHAB_NOURL.search(msg) and
+           event.target not in self.config['phab']['notin']):
             self.do_phabecho(conn, event, doc)
 
     def on_privmsg(self, conn, event):

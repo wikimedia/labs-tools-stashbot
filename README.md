@@ -63,6 +63,8 @@ phab:
   user: MyPhabUser
   cert: biglongcerthash
   echo: "%(fullName)s - %(uri)s"
+  notin:
+    - '##somechan'
 
 bash:
   view_url: https://tools.wmflabs.org/bash/quip/%s
