@@ -116,8 +116,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
 
-        if ('echo' in self.config['phab'] and RE_PHAB_NOURL.search(msg) and
-           event.target not in self.config['phab']['notin']):
+        if (event.target not in self.config['phab'].get('notin', []) and
+            'echo' in self.config['phab'] and
+            RE_PHAB_NOURL.search(msg)
+        ):
             self.do_phabecho(conn, event, doc)
 
     def on_privmsg(self, conn, event):
@@ -131,8 +133,9 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config['elasticsearch']['index']
-        self._do_es_index(index=time.strftime(fmt, time.gmtime()),
-                          doc_type='irc', body=doc)
+        self._index(
+            index=time.strftime(fmt, time.gmtime()),
+            doc_type='irc', body=doc)
 
     def do_banglog(self, conn, event, doc):
         """Process a !log message"""
@@ -186,7 +189,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
-        ret = self._do_es_index(index='sal', doc_type='sal', body=bang)
+        ret = self._index(index='sal', doc_type='sal', body=bang)
 
         if ('phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
@@ -250,7 +253,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         del bash['server']
         del bash['host']
 
-        ret = self._do_es_index(index='bash', doc_type='bash', body=bash)
+        ret = self._index(index='bash', doc_type='bash', body=bash)
 
         if 'created' in ret and ret['created'] is True:
             self._respond(conn, event,
@@ -296,11 +299,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             'host': event.source.host,
         }
 
-    def _do_es_index(self, index, doc_type, body):
+    def _index(self, index, doc_type, body):
+        """Store a document in Elasticsearch."""
         try:
             return self.es.index(index=index, doc_type=doc_type, body=body,
                                  consistency="one")
         except elasticsearch.ConnectionError as e:
             self.logger.exception(
                 'Failed to log to elasticsearch: %s', e.error)
-            return False
+            return {}

@@ -61,7 +61,7 @@ ldap:
 phab:
   url: https://phabricator.wikimedia.org
   user: MyPhabUser
-  cert: biglongcerthash
+  key: api-xxxxxxxxxxxxxxxxxxxxxxx
   echo: "%(fullName)s - %(uri)s"
   notin:
     - '##somechan'
