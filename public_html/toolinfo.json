@@ -1,0 +1,9 @@
+{
+  "name": "stashbot",
+  "title": "stashbot",
+  "description": "An IRC bot designed to store data in an Elasticsearch cluster.",
+  "url": "https://tools.wmflabs.org/stashbot/",
+  "keywords": "irc",
+  "author": "Bryan Davis",
+  "repository": "https://github.com/bd808/tools-stashbot"
+}
