@@ -131,12 +131,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config['elasticsearch']['index']
-        self.es.index(
-            index=time.strftime(fmt, time.gmtime()),
-            doc_type='irc',
-            body=doc,
-            consistency='one'
-        )
+        self._do_es_index(index=time.strftime(fmt, time.gmtime()),
+                          doc_type='irc', body=doc)
 
     def do_banglog(self, conn, event, doc):
         """Process a !log message"""
@@ -190,8 +186,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self._respond(conn, event, 'Not expecting to hear !log here')
             return
 
-        ret = self.es.index(
-            index='sal', doc_type='sal', body=bang, consistency='one')
+        ret = self._do_es_index(index='sal', doc_type='sal', body=bang)
 
         if ('phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
@@ -255,8 +250,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         del bash['server']
         del bash['host']
 
-        ret = self.es.index(
-            index='bash', doc_type='bash', body=bash, consistency='one')
+        ret = self._do_es_index(index='bash', doc_type='bash', body=bash)
 
         if 'created' in ret and ret['created'] is True:
             self._respond(conn, event,
@@ -301,3 +295,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             'server': conn.get_server_name(),
             'host': event.source.host,
         }
+
+    def _do_es_index(self, index, doc_type, body):
+        try:
+            return self.es.index(index=index, doc_type=doc_type, body=body,
+                                 consistency="one")
+        except elasticsearch.ConnectionError as e:
+            self.logger.exception(
+                'Failed to log to elasticsearch: %s', e.error)
+            return False
