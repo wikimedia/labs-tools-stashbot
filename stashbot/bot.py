@@ -284,7 +284,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         to = event.target
         if to == self.connection.get_nickname():
             to = event.source.nick
-        conn.privmsg(to, msg)
+        conn.privmsg(to, msg.replace("\n", ' '))
 
     def _event_to_doc(self, conn, event):
         """Make an Elasticsearch document from an IRC event."""
