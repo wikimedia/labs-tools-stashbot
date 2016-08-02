@@ -161,11 +161,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 return
 
             if project == 'deployment-prep':
-                self._respond(
-                    conn,
-                    event,
-                    'Please !log in #wikimedia-releng for beta cluster SAL'
-                )
+                bang['project'] = 'releng'
+                if self._clean_nick(bang['nick']) != 'krenair':
+                    # Stop whining at Alex.
+                    self._respond(
+                        conn,
+                        event,
+                        'Please !log in #wikimedia-releng for beta cluster SAL'
+                    )
 
         elif channel == '#wikimedia-releng':
             bang['project'] = 'releng'
