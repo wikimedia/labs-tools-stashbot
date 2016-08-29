@@ -83,6 +83,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.logger.debug('Authenticating with Nickserv')
             conn.privmsg('NickServ', 'identify %s %s' % (
                 self.config['irc']['nick'], self.config['irc']['password']))
+            time.sleep(5)
 
         for c in self.config['irc']['channels']:
             self.logger.info('Joining %s', c)
