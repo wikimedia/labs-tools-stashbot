@@ -77,8 +77,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def get_version(self):
         return 'Stashbot'
 
-    def on_pong(self, conn, event):
-        self.pings = 0
+    def on_welcome(self, conn, event):
+        self.logger.info('Connected to server %s', conn.get_server_name())
+        if 'password' in self.config['irc']:
+            self.do_identify()
+        else:
+            conn.execute_delayed(1, self.do_join)
 
     def on_nicknameinuse(self, conn, event):
         nick = conn.get_nickname()
@@ -87,21 +91,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         if 'password' in self.config['irc']:
             conn.execute_delayed(30, self.do_reclaim_nick)
 
-    def on_welcome(self, conn, event):
-        self.logger.info('Connected to server %s', conn.get_server_name())
-        if 'password' in self.config['irc']:
-            self.do_identify()
-        else:
-            conn.execute_delayed(1, self.do_join)
-
     def on_join(self, conn, event):
         nick = event.source.nick
         if nick == conn.get_nickname():
             self.logger.info('Joined %s', event.target)
-
-    def on_error(self, conn, event):
-        self.logger.warning(str(event))
-        conn.disconnect()
 
     def on_privnotice(self, conn, event):
         self.logger.warning(str(event))
@@ -156,6 +149,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         else:
             self._respond(conn, event, event.arguments[0][::-1])
 
+    def on_pong(self, conn, event):
+        """Clear ping count when a pong is received."""
+        self.pings = 0
+
+    def on_error(self, conn, event):
+        """Log errors and disconnect."""
+        self.logger.warning(str(event))
+        conn.disconnect()
+
     def on_kick(self, conn, event):
         """Attempt to rejoin if kicked from a channel."""
         nick = event.arguments[0]
@@ -169,19 +171,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         """Attempt to rejoin if banned from a channel."""
         self.logger.warning(str(event))
         conn.execute_delayed(60, conn.join, (event.arguments[0],))
-
-    def do_ping(self):
-        """Send a ping or disconnect if too many pings are outstanding."""
-        if self.pings >= 2:
-            self.logger.warning('Connection timed out. Disconnecting.')
-            self.disconnect()
-            self.pings = 0
-        else:
-            try:
-                self.connection.ping('keep-alive')
-                self.pings += 1
-            except irc.client.ServerNotConnectedError:
-                pass
 
     def do_identify(self):
         """Send NickServ our username and password."""
@@ -207,6 +196,19 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         nick = self.connection.get_nickname()
         if nick != self.config['irc']['nick']:
             self.connection.nick(self.config['irc']['nick'])
+
+    def do_ping(self):
+        """Send a ping or disconnect if too many pings are outstanding."""
+        if self.pings >= 2:
+            self.logger.warning('Connection timed out. Disconnecting.')
+            self.disconnect()
+            self.pings = 0
+        else:
+            try:
+                self.connection.ping('keep-alive')
+                self.pings += 1
+            except irc.client.ServerNotConnectedError:
+                pass
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
@@ -300,6 +302,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         return self.projects[1]
 
     def _getLdapNames(self, ou):
+        """Get a list of cn values from LDAP for a given ou."""
         dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
         data = self.ldap.search_s(
             dn,
