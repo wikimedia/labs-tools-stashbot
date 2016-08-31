@@ -60,6 +60,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
         # yucky and full of legacy encoding issues that should not crash my
         # bot.
+        irc.buffer.LenientDecodingLineBuffer.errors = 'replace'
         irc.client.ServerConnection.buffer_class = \
             irc.buffer.LenientDecodingLineBuffer
 
