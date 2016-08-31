@@ -94,6 +94,11 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         else:
             conn.execute_delayed(1, self.do_join)
 
+    def on_join(self, conn, event):
+        nick = event.source.nick
+        if nick == conn.get_nickname():
+            self.logger.info('Joined %s', event.target)
+
     def on_error(self, conn, event):
         self.logger.warning(str(event))
         conn.disconnect()
