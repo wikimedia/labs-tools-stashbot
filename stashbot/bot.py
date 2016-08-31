@@ -139,6 +139,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         else:
             self._respond(conn, event, event.arguments[0][::-1])
 
+    def on_kick(self, conn, event):
+        """Attempt to rejoin if kicked from a channel."""
+        nick = event.arguments[0]
+        channel = event.target
+        if nick == conn.get_nickname():
+            self.logger.warn(
+                'Kicked from %s by %s', channel, event.source.nick)
+            conn.execute_delayed(30, conn.join, (channel,))
+
     def do_ping(self):
         """Send a ping or disconnect if too many pings are outstanding."""
         if self.pings >= 2:
