@@ -84,6 +84,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         nick = conn.get_nickname()
         self.logger.warning('Requested nick "%s" in use', nick)
         conn.nick(nick + '_')
+        if 'password' in self.config['irc']:
+            conn.execute_delayed(30, self.do_reclaim_nick)
 
     def on_welcome(self, conn, event):
         self.logger.info('Connected to server %s', conn.get_server_name())
@@ -160,6 +162,11 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 self.pings += 1
             except irc.client.ServerNotConnectedError:
                 pass
+
+    def do_reclaim_nick(self):
+        nick = self.connection.get_nickname()
+        if nick != self.config['irc']['nick']:
+            self.connection.nick(self.config['irc']['nick'])
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
