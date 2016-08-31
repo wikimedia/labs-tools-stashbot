@@ -70,8 +70,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.config['irc']['realname']
         )
 
+        # Setup a connection check ping
+        self.pings = 0
+        self.connection.execute_every(300, self.do_ping)
+
     def get_version(self):
         return 'Stashbot'
+
+    def on_pong(self, conn, event):
+        self.pings = 0
 
     def on_nicknameinuse(self, conn, event):
         nick = conn.get_nickname()
@@ -131,6 +138,19 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.do_bash(conn, event, doc)
         else:
             self._respond(conn, event, event.arguments[0][::-1])
+
+    def do_ping(self):
+        """Send a ping or disconnect if too many pings are outstanding."""
+        if self.pings >= 2:
+            self.logger.warning('Connection timed out. Disconnecting.')
+            self.disconnect()
+            self.pings = 0
+        else:
+            try:
+                self.connection.ping('keep-alive')
+                self.pings += 1
+            except irc.client.ServerNotConnectedError:
+                pass
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
