@@ -90,21 +90,30 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_welcome(self, conn, event):
         self.logger.info('Connected to server %s', conn.get_server_name())
         if 'password' in self.config['irc']:
-            self.logger.debug('Authenticating with Nickserv')
-            conn.privmsg('NickServ', 'identify %s %s' % (
-                self.config['irc']['nick'], self.config['irc']['password']))
-            time.sleep(5)
-
-        for c in self.config['irc']['channels']:
-            self.logger.info('Joining %s', c)
-            conn.join(c)
-            time.sleep(1)
+            self.do_identify()
+        else:
+            conn.execute_delayed(1, self.do_join)
 
     def on_error(self, conn, event):
         self.logger.warning(str(event))
 
     def on_privnotice(self, conn, event):
         self.logger.warning(str(event))
+        msg = event.arguments[0]
+        if event.source.nick == 'NickServ':
+            if 'NickServ identify' in msg:
+                self.logger.info('Authentication requested by Nickserv')
+                if 'password' in self.config['irc']:
+                    self.do_identify()
+                else:
+                    self.logger.error('No password in config!')
+                    self.die()
+            elif 'You are now identified' in msg:
+                self.logger.debug('Authenticating succeeded')
+                conn.execute_delayed(1, self.do_join)
+            elif 'Invlid password' in msg:
+                self.logger.error('Password invalid. Check your config!')
+                self.die()
 
     def on_pubnotice(self, conn, event):
         self.logger.warning(str(event))
@@ -162,6 +171,26 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 self.pings += 1
             except irc.client.ServerNotConnectedError:
                 pass
+
+    def do_identify(self):
+        """Send NickServ our username and password."""
+        self.logger.info('Authentication requested by Nickserv')
+        self.connection.privmsg('NickServ', 'identify %s %s' % (
+            self.config['irc']['nick'], self.config['irc']['password']))
+
+    def do_join(self, channels=None):
+        """Join the next channel in our join list."""
+        if channels is None:
+            channels = self.config['irc']['channels']
+        try:
+            car, cdr = channels[0], channels[1:]
+        except (IndexError, TypeError):
+            self.logger.exception('Failed to find channel to join.')
+        else:
+            self.logger.info('Joining %s', car)
+            self.connection.join(car)
+            if cdr:
+                self.connection.execute_delayed(1, self.do_join, (cdr,))
 
     def do_reclaim_nick(self):
         nick = self.connection.get_nickname()
