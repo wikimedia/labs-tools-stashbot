@@ -96,6 +96,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def on_error(self, conn, event):
         self.logger.warning(str(event))
+        conn.disconnect()
 
     def on_privnotice(self, conn, event):
         self.logger.warning(str(event))
