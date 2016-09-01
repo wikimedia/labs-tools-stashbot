@@ -60,6 +60,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
         # yucky and full of legacy encoding issues that should not crash my
         # bot.
+        irc.buffer.LenientDecodingLineBuffer.errors = 'replace'
         irc.client.ServerConnection.buffer_class = \
             irc.buffer.LenientDecodingLineBuffer
 
@@ -69,32 +70,49 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.config['irc']['realname']
         )
 
+        # Setup a connection check ping
+        self.pings = 0
+        self.connection.execute_every(300, self.do_ping)
+
     def get_version(self):
         return 'Stashbot'
+
+    def on_welcome(self, conn, event):
+        self.logger.info('Connected to server %s', conn.get_server_name())
+        if 'password' in self.config['irc']:
+            self.do_identify()
+        else:
+            conn.execute_delayed(1, self.do_join)
 
     def on_nicknameinuse(self, conn, event):
         nick = conn.get_nickname()
         self.logger.warning('Requested nick "%s" in use', nick)
         conn.nick(nick + '_')
-
-    def on_welcome(self, conn, event):
-        self.logger.info('Connected to server %s', conn.get_server_name())
         if 'password' in self.config['irc']:
-            self.logger.debug('Authenticating with Nickserv')
-            conn.privmsg('NickServ', 'identify %s %s' % (
-                self.config['irc']['nick'], self.config['irc']['password']))
-            time.sleep(5)
+            conn.execute_delayed(30, self.do_reclaim_nick)
 
-        for c in self.config['irc']['channels']:
-            self.logger.info('Joining %s', c)
-            conn.join(c)
-            time.sleep(1)
-
-    def on_error(self, conn, event):
-        self.logger.warning(str(event))
+    def on_join(self, conn, event):
+        nick = event.source.nick
+        if nick == conn.get_nickname():
+            self.logger.info('Joined %s', event.target)
 
     def on_privnotice(self, conn, event):
         self.logger.warning(str(event))
+        msg = event.arguments[0]
+        if event.source.nick == 'NickServ':
+            if 'NickServ identify' in msg:
+                self.logger.info('Authentication requested by Nickserv')
+                if 'password' in self.config['irc']:
+                    self.do_identify()
+                else:
+                    self.logger.error('No password in config!')
+                    self.die()
+            elif 'You are now identified' in msg:
+                self.logger.debug('Authenticating succeeded')
+                conn.execute_delayed(1, self.do_join)
+            elif 'Invlid password' in msg:
+                self.logger.error('Password invalid. Check your config!')
+                self.die()
 
     def on_pubnotice(self, conn, event):
         self.logger.warning(str(event))
@@ -130,6 +148,67 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.do_bash(conn, event, doc)
         else:
             self._respond(conn, event, event.arguments[0][::-1])
+
+    def on_pong(self, conn, event):
+        """Clear ping count when a pong is received."""
+        self.pings = 0
+
+    def on_error(self, conn, event):
+        """Log errors and disconnect."""
+        self.logger.warning(str(event))
+        conn.disconnect()
+
+    def on_kick(self, conn, event):
+        """Attempt to rejoin if kicked from a channel."""
+        nick = event.arguments[0]
+        channel = event.target
+        if nick == conn.get_nickname():
+            self.logger.warn(
+                'Kicked from %s by %s', channel, event.source.nick)
+            conn.execute_delayed(30, conn.join, (channel,))
+
+    def on_bannedfromchan(self, conn, event):
+        """Attempt to rejoin if banned from a channel."""
+        self.logger.warning(str(event))
+        conn.execute_delayed(60, conn.join, (event.arguments[0],))
+
+    def do_identify(self):
+        """Send NickServ our username and password."""
+        self.logger.info('Authentication requested by Nickserv')
+        self.connection.privmsg('NickServ', 'identify %s %s' % (
+            self.config['irc']['nick'], self.config['irc']['password']))
+
+    def do_join(self, channels=None):
+        """Join the next channel in our join list."""
+        if channels is None:
+            channels = self.config['irc']['channels']
+        try:
+            car, cdr = channels[0], channels[1:]
+        except (IndexError, TypeError):
+            self.logger.exception('Failed to find channel to join.')
+        else:
+            self.logger.info('Joining %s', car)
+            self.connection.join(car)
+            if cdr:
+                self.connection.execute_delayed(1, self.do_join, (cdr,))
+
+    def do_reclaim_nick(self):
+        nick = self.connection.get_nickname()
+        if nick != self.config['irc']['nick']:
+            self.connection.nick(self.config['irc']['nick'])
+
+    def do_ping(self):
+        """Send a ping or disconnect if too many pings are outstanding."""
+        if self.pings >= 2:
+            self.logger.warning('Connection timed out. Disconnecting.')
+            self.disconnect()
+            self.pings = 0
+        else:
+            try:
+                self.connection.ping('keep-alive')
+                self.pings += 1
+            except irc.client.ServerNotConnectedError:
+                pass
 
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
@@ -223,6 +302,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         return self.projects[1]
 
     def _getLdapNames(self, ou):
+        """Get a list of cn values from LDAP for a given ou."""
         dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
         data = self.ldap.search_s(
             dn,

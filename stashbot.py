@@ -34,8 +34,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%dT%H:%M:%SZ'
 )
 
-bot = stashbot.Stashbot(
-    stashbot.config.load(args.config),
-    logging.getLogger('Stashbot')
-)
-bot.start()
+log = logging.getLogger('Stashbot')
+bot = stashbot.Stashbot(stashbot.config.load(args.config), log)
+try:
+    bot.start()
+except KeyboardInterrupt:
+    bot.disconnect()
+except Exception:
+    log.exception('Killed by unhandled exception')
+    bot.disconnect()
+    raise SystemExit()
