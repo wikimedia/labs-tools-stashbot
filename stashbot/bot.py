@@ -363,7 +363,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         """Give links to Phabricator tasks"""
         channel = event.target
         now = time.time()
-        cutoff = self._phab_echo_cuttoff(channel)
+        cutoff = self._phab_echo_cutoff(channel)
         for task in set(RE_PHAB_NOURL.findall(doc['message'])):
             if task in self.recent_phab[channel]:
                 if self.recent_phab[channel][task] > cutoff:
@@ -388,7 +388,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_clean_recent_phab(self):
         """Clean old items out of the recent_phab cache."""
         for channel in self.recent_phab:
-            cutoff = self._phab_echo_cuttoff(channel)
+            cutoff = self._phab_echo_cutoff(channel)
             for item in self.recent_phab[channel]:
                 if self.recent_phab[channel][item] < cutoff:
                     del self.recent_phab[channel][item]
