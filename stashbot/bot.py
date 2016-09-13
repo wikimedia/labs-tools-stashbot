@@ -17,6 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 """IRC bot"""
 
+import collections
 import elasticsearch
 import irc.bot
 import irc.buffer
@@ -56,6 +57,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
         self.ldap = ldap.initialize(self.config['ldap']['uri'])
         self.projects = None
+        self.recent_phab = collections.defaultdict(dict)
 
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
         # yucky and full of legacy encoding issues that should not crash my
@@ -73,6 +75,9 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         # Setup a connection check ping
         self.pings = 0
         self.connection.execute_every(300, self.do_ping)
+
+        # Clean phab recent cache every once in a while
+        self.connection.execute_every(3600, self.do_clean_recent_phab)
 
     def get_version(self):
         return 'Stashbot'
@@ -356,13 +361,37 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def do_phabecho(self, conn, event, doc):
         """Give links to Phabricator tasks"""
+        channel = event.target
+        now = time.time()
+        cutoff = self._phab_echo_cuttoff(channel)
         for task in set(RE_PHAB_NOURL.findall(doc['message'])):
+            if task in self.recent_phab[channel]:
+                if self.recent_phab[channel][task] > cutoff:
+                    # Don't spam a channel with links
+                    self.logger.debug(
+                        'Ignoring %s; last seen @%d',
+                        task, self.recent_phab[channel][task])
+                    continue
             try:
                 info = self.phab.taskInfo(task)
             except:
                 self.logger.exception('Failed to lookup info for %s', task)
             else:
                 self._respond(conn, event, self.config['phab']['echo'] % info)
+                self.recent_phab[channel][task] = now
+
+    def _phab_echo_cutoff(self, channel):
+        """Get phab echo delay for the given channel."""
+        return time.time() - self.config['phab']['delay'].get(
+            channel, self.config['phab']['delay']['__default__'])
+
+    def do_clean_recent_phab(self):
+        """Clean old items out of the recent_phab cache."""
+        for channel in self.recent_phab:
+            cutoff = self._phab_echo_cuttoff(channel)
+            for item in self.recent_phab[channel]:
+                if self.recent_phab[channel][item] < cutoff:
+                    del self.recent_phab[channel][item]
 
     def _respond(self, conn, event, msg):
         to = event.target

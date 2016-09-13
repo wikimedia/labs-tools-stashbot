@@ -65,6 +65,9 @@ phab:
   echo: "%(fullName)s - %(uri)s"
   notin:
     - '##somechan'
+  delay:
+    __default__: 300
+    '##somechan': 600
 
 bash:
   view_url: https://tools.wmflabs.org/bash/quip/%s
