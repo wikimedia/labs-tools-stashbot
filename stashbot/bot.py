@@ -387,9 +387,9 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def do_clean_recent_phab(self):
         """Clean old items out of the recent_phab cache."""
-        for channel in self.recent_phab:
+        for channel in self.recent_phab.keys():
             cutoff = self._phab_echo_cutoff(channel)
-            for item in self.recent_phab[channel]:
+            for item in self.recent_phab[channel].keys():
                 if self.recent_phab[channel][item] < cutoff:
                     del self.recent_phab[channel][item]
 
