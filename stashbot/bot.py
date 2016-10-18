@@ -18,6 +18,7 @@
 """IRC bot"""
 
 import collections
+import datetime
 import elasticsearch
 import irc.bot
 import irc.buffer
@@ -28,6 +29,7 @@ import re
 import time
 
 from . import acls
+from . import mediawiki
 from . import phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
@@ -57,6 +59,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         )
 
         self.ldap = ldap.initialize(self.config['ldap']['uri'])
+        self.wikis = {}
         self.projects = None
         self.recent_phab = collections.defaultdict(dict)
 
@@ -227,9 +230,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         """Process a !log message"""
         bang = dict(doc)
         channel = bang['channel']
-        # Trim '!log ' from the front of the message
-        msg = bang['message'][5:]
-        bang['type'] = 'sal'
+
+        channel_conf = self._get_sal_config(channel)
+
+        if 'project' not in channel_conf:
+            self.logger.warning(
+                '!log message on unexpected channel %s', channel)
+            self._respond(conn, event, 'Not expecting to hear !log here')
+            return
 
         if not self._check_sal_acl(channel, event.source):
             self.logger.warning(
@@ -242,55 +250,96 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             )
             return
 
+        # Trim '!log ' from the front of the message
+        bang['message'] = bang['message'][5:].strip()
+        bang['type'] = 'sal'
+        bang['project'] = channel_conf['project']
+
+        if bang['message'] == '':
+            self._respond(
+                conn, event, 'Message missing. Nothing logged.')
+            return
+
+        if bang['nick'] == 'logmsgbot':
+            # logmsgbot is expected to tell us who is running the command
+            bang['nick'], bang['message'] = bang['message'].split(None, 1)
+
         if channel == '#wikimedia-labs':
-            project, msg = msg.split(None, 1)
-            bang['project'] = project
-            bang['message'] = msg
-            if project not in self._getProjects():
-                self.logger.warning('Invalid project %s', project)
-                tool = 'tools.%s' % project
-                if tool in self._getProjects():
+            bang['project'], bang['message'] = bang['message'].split(None, 1)
+            if bang['project'] not in self._get_projects():
+                self.logger.warning('Invalid project %s', bang['project'])
+                tool = 'tools.%s' % bang['project']
+                if tool in self._get_projects():
                     self._respond(
                         conn,
                         event,
-                        'Did you mean %s instead of %s?' % (tool, project)
+                        'Did you mean %s instead of %s?' % (
+                            tool, bang['project'])
                     )
                 return
 
-            if project == 'deployment-prep':
+            if bang['project'] == 'deployment-prep':
                 bang['project'] = 'releng'
-                if self._clean_nick(bang['nick']) != 'krenair':
-                    # Stop whining at Alex.
-                    self._respond(
-                        conn,
-                        event,
-                        'Please !log in #wikimedia-releng for beta cluster SAL'
-                    )
 
-        elif channel == '#wikimedia-releng':
-            bang['project'] = 'releng'
-            bang['message'] = msg
+        self._store_sal_message(bang)
+        if 'wiki' in channel_conf:
+            try:
+                self._write_sal_to_wiki(conn, event, bang, channel_conf)
+            except Exception:
+                self.logger.exception('Error writing to wiki')
+                self._respond(
+                    conn, event,
+                    'Failed to log message to wiki. '
+                    'Somebody should check the error logs.')
 
-        elif channel == '#wikimedia-analytics':
-            bang['project'] = 'analytics'
-            bang['message'] = msg
+    def _get_sal_config(self, channel):
+        """Get SAL configuration for given channel."""
+        if 'channels' not in self.config['sal']:
+            return {}
+        if channel not in self.config['sal']['channels']:
+            return {}
+        return self.config['sal']['channels'][channel]
 
-        elif channel in ['#wikimedia-operations', '#wikimedia-fundraising']:
-            bang['project'] = 'production'
-            bang['message'] = msg
-            if bang['nick'] == 'logmsgbot':
-                nick, msg = msg.split(None, 1)
-                bang['nick'] = nick
-                bang['message'] = msg
+    def _check_sal_acl(self, channel, source):
+        """Check a message source against a channel's acl list"""
+        conf = self._get_sal_config(channel)
+        if 'acl' not in conf:
+            return True
+        if channel not in conf['acl']:
+            return True
+        return acls.check(conf['acl'], source)
 
+    def _get_projects(self):
+        """Get a list of valid Labs projects"""
+        if self.projects and self.projects[0] + 300 > time.time():
+            # Expire cache
+            self.projects = None
+
+        if self.projects is None:
+            projects = self._get_ldap_names('projects')
+            servicegroups = self._get_ldap_names('servicegroups')
+            self.projects = (time.time(), projects + servicegroups)
+
+        return self.projects[1]
+
+    def _get_ldap_names(self, ou):
+        """Get a list of cn values from LDAP for a given ou."""
+        dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
+        data = self.ldap.search_s(
+            dn,
+            ldap.SCOPE_SUBTREE,
+            '(objectclass=groupofnames)',
+            attrlist=['cn']
+        )
+        if data:
+            return [g[1]['cn'][0] for g in data]
         else:
-            self.logger.warning(
-                '!log message on unexpected channel %s', channel)
-            self._respond(conn, event, 'Not expecting to hear !log here')
-            return
+            self.logger.error('Failed to get LDAP data for %s', dn)
+            return []
 
+    def _store_sal_message(self, bang):
+        """Save a !log message to elasticsearch."""
         ret = self._index(index='sal', doc_type='sal', body=bang)
-
         if ('phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
         ):
@@ -305,41 +354,55 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 except:
                     self.logger.exception('Failed to add note to phab task')
 
-    def _check_sal_acl(self, channel, source):
-        """Check a message source against a channel's acl list"""
-        if 'acl' not in self.config['sal']:
-            return True
-        if channel not in self.config['sal']['acl']:
-            return True
-        return acls.check(self.config['sal']['acl'], source)
+    def _write_sal_to_wiki(self, conn, event, bang, channel_conf):
+        """Save a !log message to wiki."""
+        now = datetime.datetime.utcnow()
+        section = now.strftime('== %Y-%m-%d ==')
+        logline = '* %02d:%02d %s: %s' % (
+            now.hour, now.minute, bang['nick'], bang['message'])
+        summary = '%(nick)s: %(message)s' % bang
 
-    def _getProjects(self):
-        """Get a list of valid Labs projects"""
-        if self.projects and self.projects[0] + 300 > time.time():
-            # Expire cache
-            self.projects = None
+        site = self._get_mediawiki_client(channel_conf['wiki'])
+        page = site.Pages[channel_conf['page'] % bang]
 
-        if self.projects is None:
-            projects = self._getLdapNames('projects')
-            servicegroups = self._getLdapNames('servicegroups')
-            self.projects = (time.time(), projects + servicegroups)
+        text = page.text()
+        lines = text.split('\n')
+        first_header = 0
 
-        return self.projects[1]
+        for pos, line in enumerate(lines):
+            if line.startswith('== '):
+                first_header = pos
 
-    def _getLdapNames(self, ou):
-        """Get a list of cn values from LDAP for a given ou."""
-        dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
-        data = self.ldap.search_s(
-            dn,
-            ldap.SCOPE_SUBTREE,
-            '(objectclass=groupofnames)',
-            attrlist=['cn']
-        )
-        if data:
-            return [g[1]['cn'][0] for g in data]
+        if lines[first_header] == section:
+            lines.insert(first_header + 1, logline)
         else:
-            self.logger.error('Failed to get LDAP data for %s', dn)
-            return []
+            lines.insert(first_header, '')
+            lines.insert(first_header, logline)
+            lines.insert(first_header, section)
+
+        if 'category' in channel_conf:
+            cat = channel_conf['category']
+            if not re.search(r'\[\[Category:%s\]\]' % cat, text):
+                lines.append(
+                    '<noinclude>[[Category:%s]]</noinclude>' % cat)
+
+        page.save('\n'.join(lines), summary=summary, bot=True)
+        url = site.get_url_for_revision(page.revision)
+        self._respond(
+            conn, event, 'Logged the message at %s' % url)
+
+    def _get_mediawiki_client(self, domain):
+        """Get a mediawiki client for the given domain."""
+        if domain not in self.wikis:
+            conf = self.config['mediawiki'][domain]
+            self.wikis[domain] = mediawiki.Client(
+                conf['url'],
+                consumer_token=conf['consumer_token'],
+                consumer_secret=conf['consumer_secret'],
+                access_token=conf['access_token'],
+                access_secret=conf['access_secret']
+            )
+        return self.wikis[domain]
 
     def _clean_nick(self, nick):
         """Remove common status indicators and normlize to lower case."""
@@ -414,6 +477,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     del self.recent_phab[channel][item]
 
     def _respond(self, conn, event, msg):
+        """Respond to an event with a message."""
         to = event.target
         if to == self.connection.get_nickname():
             to = event.source.nick

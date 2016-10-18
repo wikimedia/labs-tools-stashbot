@@ -69,22 +69,44 @@ phab:
     __default__: 300
     '##somechan': 600
 
+mediawiki:
+  wikitech:
+    url: https://wikitech.wikimedia.org
+    consumer_token: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    consumer_secret: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    access_token: cccccccccccccccccccccccccccccccc
+    access_secret: dddddddddddddddddddddddddddddddddddddddd
+  otherwiki:
+    url: https://wiki.example.com
+    consumer_token: 11111111111111111111111111111111
+    consumer_secret: 2222222222222222222222222222222222222222
+    access_token: 33333333333333333333333333333333
+    access_secret: 4444444444444444444444444444444444444444
+
 bash:
   view_url: https://tools.wmflabs.org/bash/quip/%s
 
 sal:
   view_url: https://tools.wmflabs.org/sal/log/%s
   phab: "{nav icon=file, name=Mentioned in SAL, href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
-  acl:
-    # Optional access control for !log message processing (per channel)
+  channels:
     '##somechan':
-      default: deny
-      allow:
-        - *!*@*.example.net
-        - *!*@wikimedia/*
+      project: someproject
+      wiki: wikitech
+      page: Foo/SAL
+      category: SAL
+      acl:
+        default: deny
+        allow:
+            - *!*@*.example.net
+            - *!*@wikimedia/*
     '##anotherchan':
-      deny:
-        - *!*jerk@*.domain
+      project: anotherproject
+      wiki: otherwiki
+      page: Another project logs
+      acl:
+        deny:
+            - *!*jerk@*.domain
 ```
 
 Operating the bot
