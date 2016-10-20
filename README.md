@@ -75,6 +75,16 @@ bash:
 sal:
   view_url: https://tools.wmflabs.org/sal/log/%s
   phab: "{nav icon=file, name=Mentioned in SAL, href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
+  acl:
+    # Optional access control for !log message processing (per channel)
+    '##somechan':
+      default: deny
+      allow:
+        - *!*@*.example.net
+        - *!*@wikimedia/*
+    '##anotherchan':
+      deny:
+        - *!*jerk@*.domain
 ```
 
 Operating the bot

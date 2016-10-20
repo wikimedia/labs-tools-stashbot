@@ -27,6 +27,7 @@ import ldap
 import re
 import time
 
+from . import acls
 from . import phab
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
@@ -230,6 +231,17 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         msg = bang['message'][5:]
         bang['type'] = 'sal'
 
+        if not self._check_sal_acl(channel, event.source):
+            self.logger.warning(
+                'Ignoring !log from %s in %s', event.source, channel)
+            self._respond(
+                conn,
+                event,
+                '%s: You are not authorized to use !log in this channel' % (
+                    bang['nick'])
+            )
+            return
+
         if channel == '#wikimedia-labs':
             project, msg = msg.split(None, 1)
             bang['project'] = project
@@ -292,6 +304,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     self.phab.comment(task, msg)
                 except:
                     self.logger.exception('Failed to add note to phab task')
+
+    def _check_sal_acl(self, channel, source):
+        """Check a message source against a channel's acl list"""
+        if 'acl' not in self.config['sal']:
+            return True
+        if channel not in self.config['sal']['acl']:
+            return True
+        return acls.check(self.config['sal']['acl'], source)
 
     def _getProjects(self):
         """Get a list of valid Labs projects"""
