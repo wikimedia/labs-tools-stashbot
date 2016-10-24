@@ -83,6 +83,13 @@ mediawiki:
     access_token: 33333333333333333333333333333333
     access_secret: 4444444444444444444444444444444444444444
 
+twitter:
+  wikimediatech:
+    consumer_key: aaaa
+    consumer_secret: bbbb
+    access_token_key: cccc
+    access_token_secret: dddd
+
 bash:
   view_url: https://tools.wmflabs.org/bash/quip/%s
 

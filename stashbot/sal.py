@@ -20,6 +20,7 @@ import datetime
 import ldap
 import re
 import time
+import twitter
 
 from . import acls
 from . import mediawiki
@@ -94,16 +95,23 @@ class Logger(object):
             if bang['project'] == 'deployment-prep':
                 bang['project'] = 'releng'
 
-        self._store_sal_message(bang)
+        self._store_in_es(bang)
+
         if 'wiki' in channel_conf:
             try:
-                self._write_sal_to_wiki(conn, event, bang, channel_conf)
+                self._write_to_wiki(conn, event, bang, channel_conf)
             except Exception:
                 self.logger.exception('Error writing to wiki')
                 self.irc.respond(
                     conn, event,
                     'Failed to log message to wiki. '
                     'Somebody should check the error logs.')
+
+        if 'twitter' in channel_conf:
+            try:
+                self._tweet(bang, channel_conf)
+            except Exception:
+                self.logger.exception('Error writing to twitter')
 
     def _get_sal_config(self, channel):
         """Get SAL configuration for given channel."""
@@ -150,7 +158,7 @@ class Logger(object):
             self.logger.error('Failed to get LDAP data for %s', dn)
             return []
 
-    def _store_sal_message(self, bang):
+    def _store_in_es(self, bang):
         """Save a !log message to elasticsearch."""
         ret = self.es.index(index='sal', doc_type='sal', body=bang)
         if ('phab' in self.config['sal'] and
@@ -167,8 +175,8 @@ class Logger(object):
                 except:
                     self.logger.exception('Failed to add note to phab task')
 
-    def _write_sal_to_wiki(self, conn, event, bang, channel_conf):
-        """Save a !log message to wiki."""
+    def _write_to_wiki(self, conn, event, bang, channel_conf):
+        """Write a !log message to a wiki page."""
         now = datetime.datetime.utcnow()
         section = now.strftime('== %Y-%m-%d ==')
         logline = '* %02d:%02d %s: %s' % (
@@ -204,6 +212,12 @@ class Logger(object):
         self.irc.respond(
             conn, event, 'Logged the message at %s' % url)
 
+    def _tweet(self, bang, channel_conf):
+        """Post a tweet."""
+        update = ('%(nick)s: %(message)s' % bang)[:140]
+        client = self._get_twitter_client(channel_conf['twitter'])
+        client.PostUpdate(update)
+
     def _get_mediawiki_client(self, domain):
         """Get a mediawiki client for the given domain."""
         if domain not in self.wikis:
@@ -216,3 +230,15 @@ class Logger(object):
                 access_secret=conf['access_secret']
             )
         return self.wikis[domain]
+
+    def _get_twitter_client(self, name):
+        """Get a twitter client."""
+        if name not in self.twitter_clients:
+            conf = self.config['twitter'][name]
+            self.twitter_clients[name] = twitter.Api(
+                consumer_key=conf['consumer_key'],
+                consumer_secret=conf['consumer_secret'],
+                access_token_key=conf['access_token_key'],
+                access_token_secret=conf['access_token_secret']
+            )
+        return self.twitter_clients[name]
