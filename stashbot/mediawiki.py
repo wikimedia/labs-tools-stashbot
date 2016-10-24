@@ -49,7 +49,7 @@ class Client(object):
             consumer_secret=consumer_secret,
             access_token=access_token,
             access_secret=access_secret,
-            clients_useragent='Striker',
+            clients_useragent='https://tools.wmflabs.org/stashbot/',
             force_login=force_login
         )
 
