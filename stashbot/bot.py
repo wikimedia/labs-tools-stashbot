@@ -18,7 +18,6 @@
 """IRC bot"""
 
 import collections
-import elasticsearch
 import irc.bot
 import irc.buffer
 import irc.client
@@ -26,10 +25,10 @@ import irc.strings
 import re
 import time
 
+from . import es
 from . import phab
 from . import sal
 
-RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
 RE_PHAB_NOURL = re.compile(r'(?:^|[^/%])\b([DMT]\d+)\b')
 
 
@@ -43,9 +42,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         self.config = config
         self.logger = logger
 
-        self.es = elasticsearch.Elasticsearch(
+        self.es = es.Client(
             self.config['elasticsearch']['servers'],
-            **self.config['elasticsearch']['options']
+            self.config['elasticsearch']['options'],
+            self.logger
         )
 
         self.phab = phab.Client(
@@ -54,7 +54,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.config['phab']['key']
         )
 
-        self.sal = sal.Logger(self, self.phab, self.config, self.logger)
+        self.sal = sal.Logger(
+            self, self.phab, self.es, self.config, self.logger)
 
         self.recent_phab = collections.defaultdict(dict)
 
@@ -123,7 +124,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
-        doc = self._event_to_doc(conn, event)
+        doc = self.es.event_to_doc(conn, event)
         self.do_logmsg(conn, event, doc)
 
         msg = event.arguments[0]
@@ -148,7 +149,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_privmsg(self, conn, event):
         msg = event.arguments[0]
         if msg.startswith('!bash '):
-            doc = self._event_to_doc(conn, event)
+            doc = self.es.event_to_doc(conn, event)
             self.do_bash(conn, event, doc)
         else:
             self.respond(conn, event, event.arguments[0][::-1])
@@ -217,7 +218,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config['elasticsearch']['index']
-        self.es_index(
+        self.es.index(
             index=time.strftime(fmt, time.gmtime()),
             doc_type='irc', body=doc)
 
@@ -242,7 +243,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         del bash['server']
         del bash['host']
 
-        ret = self.es_index(index='bash', doc_type='bash', body=bash)
+        ret = self.es.index(index='bash', doc_type='bash', body=bash)
 
         if 'created' in ret and ret['created'] is True:
             self.respond(conn, event,
@@ -299,26 +300,3 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         if to == self.connection.get_nickname():
             to = event.source.nick
         conn.privmsg(to, msg.replace("\n", ' '))
-
-    def _event_to_doc(self, conn, event):
-        """Make an Elasticsearch document from an IRC event."""
-        return {
-            'message': RE_STYLE.sub('', event.arguments[0]),
-            '@timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-            'type': 'irc',
-            'user': event.source,
-            'channel': event.target,
-            'nick': event.source.nick,
-            'server': conn.get_server_name(),
-            'host': event.source.host,
-        }
-
-    def es_index(self, index, doc_type, body):
-        """Store a document in Elasticsearch."""
-        try:
-            return self.es.index(index=index, doc_type=doc_type, body=body,
-                                 consistency="one")
-        except elasticsearch.ConnectionError as e:
-            self.logger.exception(
-                'Failed to log to elasticsearch: %s', e.error)
-            return {}

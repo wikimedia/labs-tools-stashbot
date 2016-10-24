@@ -28,9 +28,10 @@ RE_PHAB = re.compile(r'\b(T\d+)\b')
 
 
 class Logger(object):
-    def __init__(self, bot, phab, config, logger):
-        self.bot = bot
+    def __init__(self, irc, phab, es, config, logger):
+        self.irc = irc
         self.phab = phab
+        self.es = es
         self.config = config
         self.logger = logger
 
@@ -48,13 +49,13 @@ class Logger(object):
         if 'project' not in channel_conf:
             self.logger.warning(
                 '!log message on unexpected channel %s', channel)
-            self.bot.respond(conn, event, 'Not expecting to hear !log here')
+            self.irc.respond(conn, event, 'Not expecting to hear !log here')
             return
 
         if not self._check_sal_acl(channel, event.source):
             self.logger.warning(
                 'Ignoring !log from %s in %s', event.source, channel)
-            self.bot.respond(
+            self.irc.respond(
                 conn,
                 event,
                 '%s: You are not authorized to use !log in this channel' % (
@@ -68,7 +69,7 @@ class Logger(object):
         bang['project'] = channel_conf['project']
 
         if bang['message'] == '':
-            self.bot.respond(
+            self.irc.respond(
                 conn, event, 'Message missing. Nothing logged.')
             return
 
@@ -82,7 +83,7 @@ class Logger(object):
                 self.logger.warning('Invalid project %s', bang['project'])
                 tool = 'tools.%s' % bang['project']
                 if tool in self._get_projects():
-                    self.bot.respond(
+                    self.irc.respond(
                         conn,
                         event,
                         'Did you mean %s instead of %s?' % (
@@ -99,7 +100,7 @@ class Logger(object):
                 self._write_sal_to_wiki(conn, event, bang, channel_conf)
             except Exception:
                 self.logger.exception('Error writing to wiki')
-                self.bot.respond(
+                self.irc.respond(
                     conn, event,
                     'Failed to log message to wiki. '
                     'Somebody should check the error logs.')
@@ -151,7 +152,7 @@ class Logger(object):
 
     def _store_sal_message(self, bang):
         """Save a !log message to elasticsearch."""
-        ret = self.bot.es_index(index='sal', doc_type='sal', body=bang)
+        ret = self.es.index(index='sal', doc_type='sal', body=bang)
         if ('phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
         ):
@@ -200,7 +201,7 @@ class Logger(object):
 
         page.save('\n'.join(lines), summary=summary, bot=True)
         url = site.get_url_for_revision(page.revision)
-        self.bot.respond(
+        self.irc.respond(
             conn, event, 'Logged the message at %s' % url)
 
     def _get_mediawiki_client(self, domain):
