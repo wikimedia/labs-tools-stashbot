@@ -18,22 +18,18 @@
 """IRC bot"""
 
 import collections
-import datetime
 import elasticsearch
 import irc.bot
 import irc.buffer
 import irc.client
 import irc.strings
-import ldap
 import re
 import time
 
-from . import acls
-from . import mediawiki
 from . import phab
+from . import sal
 
 RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
-RE_PHAB = re.compile(r'\b(T\d+)\b')
 RE_PHAB_NOURL = re.compile(r'(?:^|[^/%])\b([DMT]\d+)\b')
 
 
@@ -58,9 +54,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.config['phab']['key']
         )
 
-        self.ldap = ldap.initialize(self.config['ldap']['uri'])
-        self.wikis = {}
-        self.projects = None
+        self.sal = sal.Logger(self, self.phab, self.config, self.logger)
+
         self.recent_phab = collections.defaultdict(dict)
 
         # Ugh. A UTF-8 only world is a nice dream but the real world is all
@@ -139,7 +134,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
         # Look for special messages
         if msg.startswith('!log '):
-            self.do_banglog(conn, event, doc)
+            self.sal.log(conn, event, doc)
 
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
@@ -156,7 +151,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             doc = self._event_to_doc(conn, event)
             self.do_bash(conn, event, doc)
         else:
-            self._respond(conn, event, event.arguments[0][::-1])
+            self.respond(conn, event, event.arguments[0][::-1])
 
     def on_pong(self, conn, event):
         """Clear ping count when a pong is received."""
@@ -222,187 +217,9 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_logmsg(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config['elasticsearch']['index']
-        self._index(
+        self.es_index(
             index=time.strftime(fmt, time.gmtime()),
             doc_type='irc', body=doc)
-
-    def do_banglog(self, conn, event, doc):
-        """Process a !log message"""
-        bang = dict(doc)
-        channel = bang['channel']
-
-        channel_conf = self._get_sal_config(channel)
-
-        if 'project' not in channel_conf:
-            self.logger.warning(
-                '!log message on unexpected channel %s', channel)
-            self._respond(conn, event, 'Not expecting to hear !log here')
-            return
-
-        if not self._check_sal_acl(channel, event.source):
-            self.logger.warning(
-                'Ignoring !log from %s in %s', event.source, channel)
-            self._respond(
-                conn,
-                event,
-                '%s: You are not authorized to use !log in this channel' % (
-                    bang['nick'])
-            )
-            return
-
-        # Trim '!log ' from the front of the message
-        bang['message'] = bang['message'][5:].strip()
-        bang['type'] = 'sal'
-        bang['project'] = channel_conf['project']
-
-        if bang['message'] == '':
-            self._respond(
-                conn, event, 'Message missing. Nothing logged.')
-            return
-
-        if bang['nick'] == 'logmsgbot':
-            # logmsgbot is expected to tell us who is running the command
-            bang['nick'], bang['message'] = bang['message'].split(None, 1)
-
-        if channel == '#wikimedia-labs':
-            bang['project'], bang['message'] = bang['message'].split(None, 1)
-            if bang['project'] not in self._get_projects():
-                self.logger.warning('Invalid project %s', bang['project'])
-                tool = 'tools.%s' % bang['project']
-                if tool in self._get_projects():
-                    self._respond(
-                        conn,
-                        event,
-                        'Did you mean %s instead of %s?' % (
-                            tool, bang['project'])
-                    )
-                return
-
-            if bang['project'] == 'deployment-prep':
-                bang['project'] = 'releng'
-
-        self._store_sal_message(bang)
-        if 'wiki' in channel_conf:
-            try:
-                self._write_sal_to_wiki(conn, event, bang, channel_conf)
-            except Exception:
-                self.logger.exception('Error writing to wiki')
-                self._respond(
-                    conn, event,
-                    'Failed to log message to wiki. '
-                    'Somebody should check the error logs.')
-
-    def _get_sal_config(self, channel):
-        """Get SAL configuration for given channel."""
-        if 'channels' not in self.config['sal']:
-            return {}
-        if channel not in self.config['sal']['channels']:
-            return {}
-        return self.config['sal']['channels'][channel]
-
-    def _check_sal_acl(self, channel, source):
-        """Check a message source against a channel's acl list"""
-        conf = self._get_sal_config(channel)
-        if 'acl' not in conf:
-            return True
-        if channel not in conf['acl']:
-            return True
-        return acls.check(conf['acl'], source)
-
-    def _get_projects(self):
-        """Get a list of valid Labs projects"""
-        if self.projects and self.projects[0] + 300 > time.time():
-            # Expire cache
-            self.projects = None
-
-        if self.projects is None:
-            projects = self._get_ldap_names('projects')
-            servicegroups = self._get_ldap_names('servicegroups')
-            self.projects = (time.time(), projects + servicegroups)
-
-        return self.projects[1]
-
-    def _get_ldap_names(self, ou):
-        """Get a list of cn values from LDAP for a given ou."""
-        dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
-        data = self.ldap.search_s(
-            dn,
-            ldap.SCOPE_SUBTREE,
-            '(objectclass=groupofnames)',
-            attrlist=['cn']
-        )
-        if data:
-            return [g[1]['cn'][0] for g in data]
-        else:
-            self.logger.error('Failed to get LDAP data for %s', dn)
-            return []
-
-    def _store_sal_message(self, bang):
-        """Save a !log message to elasticsearch."""
-        ret = self._index(index='sal', doc_type='sal', body=bang)
-        if ('phab' in self.config['sal'] and
-            'created' in ret and ret['created'] is True
-        ):
-            m = RE_PHAB.findall(bang['message'])
-            msg = self.config['sal']['phab'] % dict(
-                {'href': self.config['sal']['view_url'] % ret['_id']},
-                **bang
-            )
-            for task in m:
-                try:
-                    self.phab.comment(task, msg)
-                except:
-                    self.logger.exception('Failed to add note to phab task')
-
-    def _write_sal_to_wiki(self, conn, event, bang, channel_conf):
-        """Save a !log message to wiki."""
-        now = datetime.datetime.utcnow()
-        section = now.strftime('== %Y-%m-%d ==')
-        logline = '* %02d:%02d %s: %s' % (
-            now.hour, now.minute, bang['nick'], bang['message'])
-        summary = '%(nick)s: %(message)s' % bang
-
-        site = self._get_mediawiki_client(channel_conf['wiki'])
-        page = site.Pages[channel_conf['page'] % bang]
-
-        text = page.text()
-        lines = text.split('\n')
-        first_header = 0
-
-        for pos, line in enumerate(lines):
-            if line.startswith('== '):
-                first_header = pos
-
-        if lines[first_header] == section:
-            lines.insert(first_header + 1, logline)
-        else:
-            lines.insert(first_header, '')
-            lines.insert(first_header, logline)
-            lines.insert(first_header, section)
-
-        if 'category' in channel_conf:
-            cat = channel_conf['category']
-            if not re.search(r'\[\[Category:%s\]\]' % cat, text):
-                lines.append(
-                    '<noinclude>[[Category:%s]]</noinclude>' % cat)
-
-        page.save('\n'.join(lines), summary=summary, bot=True)
-        url = site.get_url_for_revision(page.revision)
-        self._respond(
-            conn, event, 'Logged the message at %s' % url)
-
-    def _get_mediawiki_client(self, domain):
-        """Get a mediawiki client for the given domain."""
-        if domain not in self.wikis:
-            conf = self.config['mediawiki'][domain]
-            self.wikis[domain] = mediawiki.Client(
-                conf['url'],
-                consumer_token=conf['consumer_token'],
-                consumer_secret=conf['consumer_secret'],
-                access_token=conf['access_token'],
-                access_secret=conf['access_secret']
-            )
-        return self.wikis[domain]
 
     def _clean_nick(self, nick):
         """Remove common status indicators and normlize to lower case."""
@@ -425,10 +242,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         del bash['server']
         del bash['host']
 
-        ret = self._index(index='bash', doc_type='bash', body=bash)
+        ret = self.es_index(index='bash', doc_type='bash', body=bash)
 
         if 'created' in ret and ret['created'] is True:
-            self._respond(conn, event,
+            self.respond(conn, event,
                 '%s: Stored quip at %s' % (
                     event.source.nick,
                     self.config['bash']['view_url'] % ret['_id']
@@ -436,7 +253,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             )
         else:
             self.logger.error('Failed to save document: %s', ret)
-            self._respond(conn, event,
+            self.respond(conn, event,
                 '%s: Yuck. Something blew up when I tried to save that.' % (
                     event.source.nick,
                 )
@@ -460,7 +277,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             except:
                 self.logger.exception('Failed to lookup info for %s', task)
             else:
-                self._respond(conn, event, self.config['phab']['echo'] % info)
+                self.respond(conn, event, self.config['phab']['echo'] % info)
                 self.recent_phab[channel][task] = now
 
     def _phab_echo_cutoff(self, channel):
@@ -476,7 +293,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 if self.recent_phab[channel][item] < cutoff:
                     del self.recent_phab[channel][item]
 
-    def _respond(self, conn, event, msg):
+    def respond(self, conn, event, msg):
         """Respond to an event with a message."""
         to = event.target
         if to == self.connection.get_nickname():
@@ -496,7 +313,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             'host': event.source.host,
         }
 
-    def _index(self, index, doc_type, body):
+    def es_index(self, index, doc_type, body):
         """Store a document in Elasticsearch."""
         try:
             return self.es.index(index=index, doc_type=doc_type, body=body,
