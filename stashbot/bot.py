@@ -115,7 +115,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             elif 'You are now identified' in msg:
                 self.logger.debug('Authenticating succeeded')
                 conn.execute_delayed(1, self.do_join)
-            elif 'Invlid password' in msg:
+            elif 'Invalid password' in msg:
                 self.logger.error('Password invalid. Check your config!')
                 self.die()
 
