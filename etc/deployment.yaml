@@ -1,0 +1,24 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: stashbot.bot-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: stashbot.bot
+    spec:
+      containers:
+        - name: bot
+          image: docker-registry.tools.wmflabs.org/toollabs-python2-base:latest
+          command: [ "/data/project/stashbot/bin/k8s.sh", "run" ]
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data/project/stashbot/
+          name: home
+      volumes:
+        - hostPath:
+          path: /data/project/stashbot/
+          name: home

@@ -6,8 +6,7 @@
 /.viminfo
 /access.log
 /archive
-/config-test.yaml
-/config.yaml
+/etc/config*.yaml
 /error.log
 /replica.my.cnf
 /service.log
@@ -15,3 +14,4 @@
 /stashbot.err
 /stashbot.out
 /virtenv
+/venv-*
