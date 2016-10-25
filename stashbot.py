@@ -33,6 +33,7 @@ logging.basicConfig(
     format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
     datefmt='%Y-%m-%dT%H:%M:%SZ'
 )
+logging.captureWarnings(True)
 
 log = logging.getLogger('Stashbot')
 bot = stashbot.Stashbot(stashbot.config.load(args.config), log)
