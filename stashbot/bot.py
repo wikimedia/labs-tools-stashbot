@@ -75,11 +75,11 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         # Setup a connection check ping
         self.pings = 0
         self.reactor.scheduler.execute_every(
-            period=300, function=self.do_ping)
+            period=300, func=self.do_ping)
 
         # Clean phab recent cache every once in a while
         self.reactor.scheduler.execute_every(
-            period=3600, function=self.do_clean_recent_phab)
+            period=3600, func=self.do_clean_recent_phab)
 
     def get_version(self):
         return 'Stashbot'
