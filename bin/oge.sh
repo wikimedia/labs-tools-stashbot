@@ -74,7 +74,7 @@ case "$1" in
     logrotate)
         exec logrotate --verbose --force \
             --state ${TOOL_DIR}/archive/logrotate.state \
-            ${TOOL_DIR}/extra/logrotate.conf
+            ${TOOL_DIR}/etc/logrotate.conf
         ;;
     update)
         echo "Updating git clone..."
