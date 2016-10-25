@@ -23,7 +23,7 @@ import stashbot.config
 
 parser = argparse.ArgumentParser(description='Stashbot')
 parser.add_argument('-c', '--config',
-    default='config.yaml', help='Configuration file')
+    default='etc/config.yaml', help='Configuration file')
 parser.add_argument('-v', '--verbose', action='count',
     default=0, dest='loglevel', help='Increase logging verbosity')
 args = parser.parse_args()
