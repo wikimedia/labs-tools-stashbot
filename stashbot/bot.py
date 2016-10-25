@@ -18,6 +18,7 @@
 """IRC bot"""
 
 import collections
+import functools
 import irc.bot
 import irc.buffer
 import irc.client
@@ -89,14 +90,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         if 'password' in self.config['irc']:
             self.do_identify()
         else:
-            conn.execute_delayed(1, self.do_join)
+            self.reactor.scheduler.execute_after(1, self.do_join)
 
     def on_nicknameinuse(self, conn, event):
         nick = conn.get_nickname()
         self.logger.warning('Requested nick "%s" in use', nick)
         conn.nick(nick + '_')
         if 'password' in self.config['irc']:
-            conn.execute_delayed(30, self.do_reclaim_nick)
+            self.reactor.scheduler.execute_after(30, self.do_reclaim_nick)
 
     def on_join(self, conn, event):
         nick = event.source.nick
@@ -116,7 +117,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     self.die()
             elif 'You are now identified' in msg:
                 self.logger.debug('Authenticating succeeded')
-                conn.execute_delayed(1, self.do_join)
+                self.reactor.scheduler.execute_after(1, self.do_join)
             elif 'Invalid password' in msg:
                 self.logger.error('Password invalid. Check your config!')
                 self.die()
@@ -172,12 +173,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         if nick == conn.get_nickname():
             self.logger.warn(
                 'Kicked from %s by %s', channel, event.source.nick)
-            conn.execute_delayed(30, conn.join, (channel,))
+            self.reactor.scheduler.execute_after(
+                30, functools.partial(conn.join, channel))
 
     def on_bannedfromchan(self, conn, event):
         """Attempt to rejoin if banned from a channel."""
         self.logger.warning(str(event))
-        conn.execute_delayed(60, conn.join, (event.arguments[0],))
+        self.reactor.scheduler.execute_after(
+            60, functools.partial(conn.join, event.arguments[0]))
 
     def do_identify(self):
         """Send NickServ our username and password."""
@@ -197,7 +200,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.logger.info('Joining %s', car)
             self.connection.join(car)
             if cdr:
-                self.connection.execute_delayed(1, self.do_join, (cdr,))
+                self.reactor.scheduler.execute_after(
+                    1, functools.partial(self.do_join, cdr))
 
     def do_reclaim_nick(self):
         nick = self.connection.get_nickname()
