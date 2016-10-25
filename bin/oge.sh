@@ -30,7 +30,7 @@ case "$1" in
         date +%Y-%m-%dT%H:%M:%S
         echo "Running stashbot..."
         cd ${TOOL_DIR}
-        exec python bin/stashbot.py
+        exec python stashbot.py
         ;;
     stop)
         echo "Stopping stashbot..."
