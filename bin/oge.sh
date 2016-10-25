@@ -10,7 +10,7 @@ JOB=stashbot
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
 if [[ -f ${TOOL_DIR}/venv-oge-py2/bin/activate ]]; then
     # Enable virtualenv
-    source ./venv-oge-py2/bin/activate
+    source ${TOOL_DIR}/venv-oge-py2/bin/activate
 fi
 
 _get_job_id() {
@@ -22,9 +22,9 @@ _get_job_id() {
 
 case "$1" in
     start)
-        echo "Starting stashbot..."
+        echo "Starting stashbot OGE job..."
         jsub -once -continuous -stderr -mem $MEM -l release=$REL -N $JOB \
-            ${TOOL_DIR}/bin/stashbot.sh run
+            ${TOOL_DIR}/bin/oge.sh run
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
