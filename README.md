@@ -3,12 +3,20 @@ Stashbot
 
 An IRC bot designed to store data in an Elasticsearch cluster.
 
-This bot was created to replace Logstash in an application stack that processes
-IRC messages for:
+This bot was created to replace Logstash in an application stack that
+processes IRC messages for:
 
 - [quips](https://github.com/bd808/quips)
 - [SAL](https://github.com/bd808/SAL)
 - (an as yet unwritten IRC history search system)
+
+In addition to its original Elasticsearch storage purpose, the bot has
+expanded to support:
+- Updating Phabricator tasks mentioned in `!log` irc massages
+- Providing summary information for Phabricator manifest, differential, and
+  pholio objects mentioned in irc messages
+- Logging `!log` messages to a MediaWiki wiki
+- Posting `!log` messages to Twitter
 
 Install
 -------
@@ -20,10 +28,10 @@ $ pip install -r requirements.txt
 
 Configure
 ---------
-The bot is configured using a yaml file. By default `stashbot.py` will look for
-a configuration file named `config.yaml`. An alternate file can be provided
-using the `--config` cli argument. See `stashbot.py --help` for more
-information.
+The bot is configured using a yaml file. By default `stashbot.py` will look
+for a configuration file named `config.yaml`. An alternate file can be
+provided using the `--config` cli argument. See `stashbot.py --help` for
+more information.
 
 Example configuration:
 ```
@@ -124,14 +132,6 @@ $ ./stashbot.sh start
 
 # Stop the bot
 $ ./stashbot.sh stop
-```
-
-Running with Docker
--------------------
-```
-$ docker build -t stashbot/stashbot .
-$ docker run --name=stashbot -e "CONFIG=test.yaml" -d stashbot/stashbot
-$ docker logs --follow stashbot
 ```
 
 License
