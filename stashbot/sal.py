@@ -17,7 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ldap
+import ldap3
 import re
 import time
 import twitter
@@ -36,7 +36,10 @@ class Logger(object):
         self.config = config
         self.logger = logger
 
-        self.ldap = ldap.initialize(self.config['ldap']['uri'])
+        self.ldap = ldap3.Connection(
+            self.config['ldap']['uri'],
+            auto_bind=True
+        )
         self.wikis = {}
         self.projects = None
 
@@ -146,14 +149,13 @@ class Logger(object):
     def _get_ldap_names(self, ou):
         """Get a list of cn values from LDAP for a given ou."""
         dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
-        data = self.ldap.search_s(
+        success = self.ldap.search(
             dn,
-            ldap.SCOPE_SUBTREE,
             '(objectclass=groupofnames)',
-            attrlist=['cn']
+            attributes=['cn']
         )
-        if data:
-            return [g[1]['cn'][0] for g in data]
+        if success:
+            return [g.cn for g in self.ldap.entries]
         else:
             self.logger.error('Failed to get LDAP data for %s', dn)
             return []
