@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Management script for stashbot SGE job
+# Management script for stashbot OGE job
 
 set -e
 
@@ -7,10 +7,10 @@ MEM=512m
 REL=trusty
 JOB=stashbot
 
-TOOL_DIR=$(cd $(dirname $0) && pwd -P)
-if [[ -f ${TOOL_DIR}/virtenv/bin/activate ]]; then
+TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
+if [[ -f ${TOOL_DIR}/venv-oge-py2/bin/activate ]]; then
     # Enable virtualenv
-    source ./virtenv/bin/activate
+    source ./venv-oge-py2/bin/activate
 fi
 
 _get_job_id() {
@@ -24,13 +24,13 @@ case "$1" in
     start)
         echo "Starting stashbot..."
         jsub -once -continuous -stderr -mem $MEM -l release=$REL -N $JOB \
-            ${TOOL_DIR}/stashbot.sh run
+            ${TOOL_DIR}/bin/stashbot.sh run
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
         echo "Running stashbot..."
         cd ${TOOL_DIR}
-        exec python ./stashbot.py
+        exec python bin/stashbot.py
         ;;
     stop)
         echo "Stopping stashbot..."
