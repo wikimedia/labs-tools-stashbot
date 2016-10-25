@@ -18,6 +18,14 @@
 
 import argparse
 import logging
+import os
+import sys
+
+# Add stashbot package to search path
+script = os.path.realpath(sys.argv[0])
+stashbot_src = os.path.dirname(os.path.dirname(script))
+sys.path.append(stashbot_src)
+
 import stashbot
 import stashbot.config
 
