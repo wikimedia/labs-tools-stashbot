@@ -3,7 +3,7 @@
 
 set -e
 
-DEPLOYMENT=stashbot.bot-deployment
+DEPLOYMENT=stashbot.bot
 POD_NAME=stashbot.bot
 
 CONFIG=etc/config-k8s.yaml
@@ -24,7 +24,7 @@ _get_pod() {
 case "$1" in
     start)
         echo "Starting stashbot k8s deployment..."
-        kubctl create -f ${TOOL_DIR}/etc/deployment.yaml
+        kubectl create -f ${TOOL_DIR}/etc/deployment.yaml
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
@@ -33,7 +33,7 @@ case "$1" in
         exec python stashbot.py --config ${CONFIG}
         ;;
     stop)
-        echo "Stopping stashbot k8s deplyment..."
+        echo "Stopping stashbot k8s deployment..."
         kubectl delete deployment ${DEPLOYMENT}
         # FIXME: wait for the pods to stop
         ;;
@@ -43,6 +43,7 @@ case "$1" in
         $0 start
         ;;
     status)
+        echo "Active pods:"
         kubectl get pods -l name=${POD_NAME}
         ;;
     tail)

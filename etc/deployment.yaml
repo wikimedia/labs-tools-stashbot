@@ -1,8 +1,10 @@
 ---
-apiVersion: extensions/v1beta1
+# Run stashbot on kubernetes
 kind: Deployment
+apiVersion: extensions/v1beta1
 metadata:
-  name: stashbot.bot-deployment
+  name: stashbot.bot
+  namespace: stashbot
 spec:
   replicas: 1
   template:
@@ -14,11 +16,15 @@ spec:
         - name: bot
           image: docker-registry.tools.wmflabs.org/toollabs-python2-base:latest
           command: [ "/data/project/stashbot/bin/k8s.sh", "run" ]
+          workingDir: /data/project/stashbot
+          env:
+            - name: HOME
+              value: /data/project/stashbot
           imagePullPolicy: Always
           volumeMounts:
-            - mountPath: /data/project/stashbot/
-          name: home
+            - name: home
+              mountPath: /data/project/stashbot/
       volumes:
-        - hostPath:
-          path: /data/project/stashbot/
-          name: home
+        - name: home
+          hostPath:
+            path: /data/project/stashbot/
