@@ -41,6 +41,7 @@ class Logger(object):
             auto_bind=True
         )
         self.wikis = {}
+        self.twitter_clients = {}
         self.projects = None
 
     def log(self, conn, event, doc):
