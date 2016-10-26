@@ -209,10 +209,14 @@ class Logger(object):
                 lines.append(
                     '<noinclude>[[Category:%s]]</noinclude>' % cat)
 
-        page.save('\n'.join(lines), summary=summary, bot=True)
-        url = site.get_url_for_revision(page.revision)
-        self.irc.respond(
-            conn, event, 'Logged the message at %s' % url)
+        resp = page.save('\n'.join(lines), summary=summary, bot=True)
+        if resp['result'] == 'Success':
+            self.irc.respond(
+                conn, event, 'Logged the message at %(title)s' % resp)
+        else:
+            self.logger.error('Failed to edit %s: %s', page.name, resp)
+            self.irc.respond(
+                conn, event, 'Error updating %s' % page.name)
 
     def _tweet(self, bang, channel_conf):
         """Post a tweet."""
