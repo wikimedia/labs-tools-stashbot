@@ -186,7 +186,7 @@ class Logger(object):
         summary = '%(nick)s: %(message)s' % bang
 
         site = self._get_mediawiki_client(channel_conf['wiki'])
-        page = site.Pages[channel_conf['page'] % bang]
+        page = site.get_page(channel_conf['page'] % bang)
 
         text = page.text()
         lines = text.split('\n')
