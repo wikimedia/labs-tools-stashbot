@@ -130,14 +130,23 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         doc = self.es.event_to_doc(conn, event)
         self.do_write_to_elasticsearch(conn, event, doc)
 
-        msg = event.arguments[0]
-        if ('ignore' in self.config['irc'] and
-            self._clean_nick(doc['nick']) in self.config['irc']['ignore']
-        ):
+        ignore = self.config['irc'].get('ignore', [])
+        if self._clean_nick(doc['nick']) in ignore:
             return
 
         # Look for special messages
-        if msg.startswith('!log '):
+        msg = event.arguments[0]
+
+        if msg.startswith('!log help'):
+            self.do_help(conn, event)
+
+        elif msg.startswith(conn.get_nickname()):
+            self.do_help(conn, event)
+
+        elif msg.startswith(self.config['irc']['nick']):
+            self.do_help(conn, event)
+
+        elif msg.startswith('!log '):
             self.sal.log(conn, event, doc)
 
         elif msg.startswith('!bash '):
@@ -231,6 +240,13 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def _clean_nick(self, nick):
         """Remove common status indicators and normlize to lower case."""
         return nick.split('|', 1)[0].rstrip('`_').lower()
+
+    def do_help(self, conn, event):
+        """Handle a help message request"""
+        self.respond(
+            conn, event,
+            'See https://wikitech.wikimedia.org/wiki/Tool:Stashbot for help.'
+        )
 
     def do_bash(self, conn, event, doc):
         """Process a !bash message"""
