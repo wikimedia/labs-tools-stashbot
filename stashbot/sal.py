@@ -210,7 +210,13 @@ class Logger(object):
     def _write_to_wiki(self, bang, channel_conf):
         """Write a !log message to a wiki page."""
         now = datetime.datetime.utcnow()
-        section = now.strftime('== %Y-%m-%d ==')
+        leader = channel_conf.get('leader', '==')
+        target_section = now.strftime(
+            '%(leader)s %(date_format)s %(leader)s' % {
+                'leader': leader,
+                'date_format': '%Y-%m-%d',
+            }
+        )
         logline = '* %02d:%02d %s: %s' % (
             now.hour, now.minute, bang['nick'], bang['message'])
         summary = '%(nick)s: %(message)s' % bang
@@ -223,16 +229,16 @@ class Logger(object):
         first_header = 0
 
         for pos, line in enumerate(lines):
-            if line.startswith('== '):
+            if line.startswith('%s ' % leader):
                 first_header = pos
                 break
 
-        if lines[first_header] == section:
+        if lines[first_header] == target_section:
             lines.insert(first_header + 1, logline)
         else:
             lines.insert(first_header, '')
             lines.insert(first_header, logline)
-            lines.insert(first_header, section)
+            lines.insert(first_header, target_section)
 
         if 'category' in channel_conf:
             cat = channel_conf['category']
