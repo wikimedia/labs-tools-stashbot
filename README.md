@@ -128,10 +128,13 @@ Operating the bot
 -----------------
 ```
 # Start the bot
-$ ./stashbot.sh start
+$ ./bin/stashbot.sh start
 
 # Stop the bot
-$ ./stashbot.sh stop
+$ ./bin/stashbot.sh stop
+
+# Tail logs
+$ ./bin/stashbot.sh tail
 ```
 
 License
