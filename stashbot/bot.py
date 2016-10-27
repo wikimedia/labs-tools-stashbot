@@ -237,10 +237,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             index=time.strftime(fmt, time.gmtime()),
             doc_type='irc', body=doc)
 
-    def _clean_nick(self, nick):
-        """Remove common status indicators and normlize to lower case."""
-        return nick.split('|', 1)[0].rstrip('`_').lower()
-
     def do_help(self, conn, event):
         """Handle a help message request"""
         self.respond(
@@ -286,7 +282,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         """Give links to Phabricator tasks"""
         channel = event.target
         now = time.time()
-        cutoff = self._phab_echo_cutoff(channel)
+        cutoff = self.get_phab_echo_cutoff(channel)
         for task in set(RE_PHAB_NOURL.findall(doc['message'])):
             if task in self.recent_phab[channel]:
                 if self.recent_phab[channel][task] > cutoff:
@@ -303,7 +299,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                 self.respond(conn, event, self.config['phab']['echo'] % info)
                 self.recent_phab[channel][task] = now
 
-    def _phab_echo_cutoff(self, channel):
+    def get_phab_echo_cutoff(self, channel):
         """Get phab echo delay for the given channel."""
         return time.time() - self.config['phab']['delay'].get(
             channel, self.config['phab']['delay']['__default__'])
@@ -311,10 +307,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def do_clean_recent_phab(self):
         """Clean old items out of the recent_phab cache."""
         for channel in self.recent_phab.keys():
-            cutoff = self._phab_echo_cutoff(channel)
+            cutoff = self.get_phab_echo_cutoff(channel)
             for item in self.recent_phab[channel].keys():
                 if self.recent_phab[channel][item] < cutoff:
                     del self.recent_phab[channel][item]
+
+    def _clean_nick(self, nick):
+        """Remove common status indicators and normlize to lower case."""
+        return nick.split('|', 1)[0].rstrip('`_').lower()
 
     def respond(self, conn, event, msg):
         """Respond to an event with a message."""
