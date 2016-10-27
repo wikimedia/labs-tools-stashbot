@@ -168,16 +168,18 @@ class Logger(object):
     def _get_ldap_names(self, ou):
         """Get a list of cn values from LDAP for a given ou."""
         dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
-        success = self.ldap.search(
-            dn,
-            '(objectclass=groupofnames)',
-            attributes=['cn']
-        )
-        if success:
-            return [g.cn for g in self.ldap.entries]
-        else:
-            self.logger.error('Failed to get LDAP data for %s', dn)
-            return []
+        try:
+            if self.ldap.search(
+                dn,
+                '(objectclass=groupofnames)',
+                attributes=['cn']
+            ):
+                return [g.cn for g in self.ldap.entries]
+            else:
+                self.logger.error('Failed to get LDAP data for %s', dn)
+        except:
+            self.logger.exception('Exception getting LDAP data for %s', dn)
+        return []
 
     def _store_in_es(self, bang):
         """Save a !log message to elasticsearch."""
