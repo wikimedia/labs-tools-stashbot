@@ -91,13 +91,17 @@ class Logger(object):
             bang['project'], bang['message'] = bang['message'].split(None, 1)
             if bang['project'] not in self._get_projects():
                 self.logger.warning('Invalid project %s', bang['project'])
-                tool = 'tools.%s' % bang['project']
-                if tool in self._get_projects() and respond_to_channel:
+                if respond_to_channel:
                     self.irc.respond(
                         conn, event,
-                        'Did you mean %s instead of %s?' % (
-                            tool, bang['project'])
+                        'Unknown project "%s"' % bang['project']
                     )
+                    tool = 'tools.%s' % bang['project']
+                    if tool in self._get_projects():
+                        self.irc.respond(
+                            conn, event,
+                            'Did you mean to say "%s" instead?' % tool
+                        )
                 return
 
             if bang['project'] in ['deployment-prep', 'contintcloud']:
