@@ -128,7 +128,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_pubmsg(self, conn, event):
         # Log all public channel messages we receive
         doc = self.es.event_to_doc(conn, event)
-        self.do_logmsg(conn, event, doc)
+        self.do_write_to_elasticsearch(conn, event, doc)
 
         msg = event.arguments[0]
         if ('ignore' in self.config['irc'] and
@@ -221,7 +221,7 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             except irc.client.ServerNotConnectedError:
                 pass
 
-    def do_logmsg(self, conn, event, doc):
+    def do_write_to_elasticsearch(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config['elasticsearch']['index']
         self.es.index(
