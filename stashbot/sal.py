@@ -63,7 +63,7 @@ class Logger(object):
             self.irc.respond(
                 conn,
                 event,
-                '%s: You are not authorized to use !log in this channel' % (
+                '%s: The !log ACLs in this channel blocked your message' % (
                     bang['nick'])
             )
             return
