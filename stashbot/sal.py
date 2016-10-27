@@ -29,6 +29,8 @@ RE_PHAB = re.compile(r'\b(T\d+)\b')
 
 
 class Logger(object):
+    """Handle server admin logs"""
+
     def __init__(self, irc, phab, es, config, logger):
         self.irc = irc
         self.phab = phab
@@ -40,9 +42,9 @@ class Logger(object):
             self.config['ldap']['uri'],
             auto_bind=True
         )
-        self.wikis = {}
-        self.twitter_clients = {}
-        self.projects = None
+        self._cached_wikis = {}
+        self._cached_twitter = {}
+        self._cached_projects = None
 
     def log(self, conn, event, doc):
         """Process a !log message"""
@@ -137,16 +139,18 @@ class Logger(object):
 
     def _get_projects(self):
         """Get a list of valid Labs projects"""
-        if self.projects and self.projects[0] + 300 > time.time():
+        if (self._cached_projects and
+            self._cached_projects[0] + 300 > time.time()
+        ):
             # Expire cache
-            self.projects = None
+            self._cached_projects = None
 
-        if self.projects is None:
+        if self._cached_projects is None:
             projects = self._get_ldap_names('projects')
             servicegroups = self._get_ldap_names('servicegroups')
-            self.projects = (time.time(), projects + servicegroups)
+            self._cached_projects = (time.time(), projects + servicegroups)
 
-        return self.projects[1]
+        return self._cached_projects[1]
 
     def _get_ldap_names(self, ou):
         """Get a list of cn values from LDAP for a given ou."""
@@ -224,25 +228,25 @@ class Logger(object):
 
     def _get_mediawiki_client(self, domain):
         """Get a mediawiki client for the given domain."""
-        if domain not in self.wikis:
+        if domain not in self._cached_wikis:
             conf = self.config['mediawiki'][domain]
-            self.wikis[domain] = mediawiki.Client(
+            self._cached_wikis[domain] = mediawiki.Client(
                 conf['url'],
                 consumer_token=conf['consumer_token'],
                 consumer_secret=conf['consumer_secret'],
                 access_token=conf['access_token'],
                 access_secret=conf['access_secret']
             )
-        return self.wikis[domain]
+        return self._cached_wikis[domain]
 
     def _get_twitter_client(self, name):
         """Get a twitter client."""
-        if name not in self.twitter_clients:
+        if name not in self._cached_twitter:
             conf = self.config['twitter'][name]
-            self.twitter_clients[name] = twitter.Api(
+            self._cached_twitter[name] = twitter.Api(
                 consumer_key=conf['consumer_key'],
                 consumer_secret=conf['consumer_secret'],
                 access_token_key=conf['access_token_key'],
                 access_token_secret=conf['access_token_secret']
             )
-        return self.twitter_clients[name]
+        return self._cached_twitter[name]
