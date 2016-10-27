@@ -108,12 +108,18 @@ class Logger(object):
                 # We got a message that the releng folks would like to see in
                 # their unified SAL too. Munge the message and call ourself
                 # again, but don't say anything on irc about it.
-                new_doc = dict(bang)
-                new_doc.update({
-                    'channel': '#wikimedia-releng',
-                    'message': '!log %s' % bang['message'],
-                })
-                self.log(conn, event, new_doc, False)
+                self._log_duplicate(
+                    conn, event, bang,
+                    channel='#wikimedia-releng',
+                    message='!log %s' % bang['message']
+                )
+
+            elif channel == '#wikimedia-operations':
+                if '#releng' in bang['message']:
+                    self._log_duplicate(
+                        conn, event, bang,
+                        channel='#wikimedia-releng'
+                    )
 
         self._store_in_es(bang)
 
@@ -137,6 +143,15 @@ class Logger(object):
                 self._tweet(bang, channel_conf)
             except:
                 self.logger.exception('Error writing to twitter')
+
+    def _log_duplicate(self, conn, event, doc, **kwargs):
+        if not kwargs:
+            self.logger.warning(
+                'Cowardly refusing to re-log an unmodified message')
+            return
+        new_doc = dict(doc)
+        new_doc.update(kwargs)
+        self.log(conn, event, new_doc, respond_to_channel=False)
 
     def _get_sal_config(self, channel):
         """Get SAL configuration for given channel."""
