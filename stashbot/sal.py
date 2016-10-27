@@ -274,18 +274,18 @@ class Logger(object):
         client = self._get_twitter_client(channel_conf['twitter'])
         client.PostUpdate(update)
 
-    def _get_mediawiki_client(self, domain):
-        """Get a mediawiki client for the given domain."""
-        if domain not in self._cached_wikis:
-            conf = self.config['mediawiki'][domain]
-            self._cached_wikis[domain] = mediawiki.Client(
+    def _get_mediawiki_client(self, name):
+        """Get a mediawiki client for the given name."""
+        if name not in self._cached_wikis:
+            conf = self.config['mediawiki'][name]
+            self._cached_wikis[name] = mediawiki.Client(
                 conf['url'],
                 consumer_token=conf['consumer_token'],
                 consumer_secret=conf['consumer_secret'],
                 access_token=conf['access_token'],
                 access_secret=conf['access_secret']
             )
-        return self._cached_wikis[domain]
+        return self._cached_wikis[name]
 
     def _get_twitter_client(self, name):
         """Get a twitter client."""
