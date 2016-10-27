@@ -119,6 +119,7 @@ sal:
       project: anotherproject
       wiki: otherwiki
       page: Another project logs
+      leader: ===
       acl:
         deny:
             - *!*jerk@*.domain
