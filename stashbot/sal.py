@@ -104,17 +104,18 @@ class Logger(object):
         if 'wiki' in channel_conf:
             try:
                 self._write_to_wiki(conn, event, bang, channel_conf)
-            except Exception:
+            except:
                 self.logger.exception('Error writing to wiki')
                 self.irc.respond(
                     conn, event,
                     'Failed to log message to wiki. '
-                    'Somebody should check the error logs.')
+                    'Somebody should check the error logs.'
+                )
 
         if 'twitter' in channel_conf:
             try:
                 self._tweet(bang, channel_conf)
-            except Exception:
+            except:
                 self.logger.exception('Error writing to twitter')
 
     def _get_sal_config(self, channel):
@@ -211,13 +212,9 @@ class Logger(object):
                     '<noinclude>[[Category:%s]]</noinclude>' % cat)
 
         resp = page.save('\n'.join(lines), summary=summary, bot=True)
-        if resp['result'] == 'Success':
-            self.irc.respond(
-                conn, event, 'Logged the message at %(title)s' % resp)
-        else:
-            self.logger.error('Failed to edit %s: %s', page.name, resp)
-            self.irc.respond(
-                conn, event, 'Error updating %s' % page.name)
+        url = site.get_url_for_revision(resp['newrevid'])
+        self.irc.respond(
+            conn, event, 'Logged the message at %s' % url)
 
     def _tweet(self, bang, channel_conf):
         """Post a tweet."""
