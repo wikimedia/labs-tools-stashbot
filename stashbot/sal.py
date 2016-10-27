@@ -46,7 +46,7 @@ class Logger(object):
         self._cached_twitter = {}
         self._cached_projects = None
 
-    def log(self, conn, event, doc):
+    def log(self, conn, event, doc, respond_to_channel=True):
         """Process a !log message"""
         bang = dict(doc)
         channel = bang['channel']
@@ -56,18 +56,20 @@ class Logger(object):
         if 'project' not in channel_conf:
             self.logger.warning(
                 '!log message on unexpected channel %s', channel)
-            self.irc.respond(conn, event, 'Not expecting to hear !log here')
+            if respond_to_channel:
+                self.irc.respond(
+                    conn, event, 'Not expecting to hear !log here')
             return
 
         if not self._check_sal_acl(channel, event.source):
             self.logger.warning(
                 'Ignoring !log from %s in %s', event.source, channel)
-            self.irc.respond(
-                conn,
-                event,
-                '%s: The !log ACLs in this channel blocked your message' % (
-                    bang['nick'])
-            )
+            if respond_to_channel:
+                self.irc.respond(
+                    conn, event,
+                    '%s: !log ACLs in this channel blocked your message' % (
+                        bang['nick'])
+                )
             return
 
         # Trim '!log ' from the front of the message
@@ -76,8 +78,9 @@ class Logger(object):
         bang['project'] = channel_conf['project']
 
         if bang['message'] == '':
-            self.irc.respond(
-                conn, event, 'Message missing. Nothing logged.')
+            if respond_to_channel:
+                self.irc.respond(
+                    conn, event, 'Message missing. Nothing logged.')
             return
 
         if bang['nick'] == 'logmsgbot':
@@ -89,30 +92,40 @@ class Logger(object):
             if bang['project'] not in self._get_projects():
                 self.logger.warning('Invalid project %s', bang['project'])
                 tool = 'tools.%s' % bang['project']
-                if tool in self._get_projects():
+                if tool in self._get_projects() and respond_to_channel:
                     self.irc.respond(
-                        conn,
-                        event,
+                        conn, event,
                         'Did you mean %s instead of %s?' % (
                             tool, bang['project'])
                     )
                 return
 
-            if bang['project'] == 'deployment-prep':
-                bang['project'] = 'releng'
+            if bang['project'] in ['deployment-prep', 'contintcloud']:
+                # We got a message that the releng folks would like to see in
+                # their unified SAL too. Munge the message and call ourself
+                # again, but don't say anything on irc about it.
+                new_doc = dict(doc)
+                new_doc.update({
+                    'channel': '#wikimedia-releng',
+                    'message': '!log %s' % doc['message'],
+                })
+                self.log(conn, event, new_doc, False)
 
         self._store_in_es(bang)
 
         if 'wiki' in channel_conf:
             try:
-                self._write_to_wiki(conn, event, bang, channel_conf)
+                url = self._write_to_wiki(bang, channel_conf)
+                self.irc.respond(
+                    conn, event, 'Logged the message at %s' % url)
             except:
                 self.logger.exception('Error writing to wiki')
-                self.irc.respond(
-                    conn, event,
-                    'Failed to log message to wiki. '
-                    'Somebody should check the error logs.'
-                )
+                if respond_to_channel:
+                    self.irc.respond(
+                        conn, event,
+                        'Failed to log message to wiki. '
+                        'Somebody should check the error logs.'
+                    )
 
         if 'twitter' in channel_conf:
             try:
@@ -183,7 +196,7 @@ class Logger(object):
                 except:
                     self.logger.exception('Failed to add note to phab task')
 
-    def _write_to_wiki(self, conn, event, bang, channel_conf):
+    def _write_to_wiki(self, bang, channel_conf):
         """Write a !log message to a wiki page."""
         now = datetime.datetime.utcnow()
         section = now.strftime('== %Y-%m-%d ==')
@@ -216,9 +229,7 @@ class Logger(object):
                     '<noinclude>[[Category:%s]]</noinclude>' % cat)
 
         resp = page.save('\n'.join(lines), summary=summary, bot=True)
-        url = site.get_url_for_revision(resp['newrevid'])
-        self.irc.respond(
-            conn, event, 'Logged the message at %s' % url)
+        return site.get_url_for_revision(resp['newrevid'])
 
     def _tweet(self, bang, channel_conf):
         """Post a tweet."""
