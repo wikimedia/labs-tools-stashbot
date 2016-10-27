@@ -155,13 +155,21 @@ class Logger(object):
         if (self._cached_projects and
             self._cached_projects[0] + 300 > time.time()
         ):
-            # Expire cache
+            # Clear expired cache
             self._cached_projects = None
 
         if self._cached_projects is None:
             projects = self._get_ldap_names('projects')
             servicegroups = self._get_ldap_names('servicegroups')
-            self._cached_projects = (time.time(), projects + servicegroups)
+            if projects and servicegroups:
+                self._cached_projects = (
+                    time.time(),
+                    projects + servicegroups
+                )
+            else:
+                # One or both lists empty probably means LDAP failures
+                # Don't cache the result.
+                return projects + servicegroups
 
         return self._cached_projects[1]
 
