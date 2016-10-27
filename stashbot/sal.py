@@ -104,10 +104,10 @@ class Logger(object):
                 # We got a message that the releng folks would like to see in
                 # their unified SAL too. Munge the message and call ourself
                 # again, but don't say anything on irc about it.
-                new_doc = dict(doc)
+                new_doc = dict(bang)
                 new_doc.update({
                     'channel': '#wikimedia-releng',
-                    'message': '!log %s' % doc['message'],
+                    'message': '!log %s' % bang['message'],
                 })
                 self.log(conn, event, new_doc, False)
 
