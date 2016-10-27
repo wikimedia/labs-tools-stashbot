@@ -123,6 +123,8 @@ sal:
       acl:
         deny:
             - *!*jerk@*.domain
+    '##otherchan':
+      use_config: '##somechan'
 ```
 
 Operating the bot

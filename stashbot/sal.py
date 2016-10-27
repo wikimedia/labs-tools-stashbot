@@ -53,6 +53,10 @@ class Logger(object):
 
         channel_conf = self._get_sal_config(channel)
 
+        if 'use_config' in channel_conf:
+            channel = channel_conf['use_config']
+            channel_conf = self._get_sal_config(channel)
+
         if 'project' not in channel_conf:
             self.logger.warning(
                 '!log message on unexpected channel %s', channel)
