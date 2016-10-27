@@ -116,8 +116,9 @@ class Logger(object):
         if 'wiki' in channel_conf:
             try:
                 url = self._write_to_wiki(bang, channel_conf)
-                self.irc.respond(
-                    conn, event, 'Logged the message at %s' % url)
+                if respond_to_channel:
+                    self.irc.respond(
+                        conn, event, 'Logged the message at %s' % url)
             except:
                 self.logger.exception('Error writing to wiki')
                 if respond_to_channel:
