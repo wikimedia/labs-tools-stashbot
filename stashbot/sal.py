@@ -225,6 +225,7 @@ class Logger(object):
         for pos, line in enumerate(lines):
             if line.startswith('== '):
                 first_header = pos
+                break
 
         if lines[first_header] == section:
             lines.insert(first_header + 1, logline)
