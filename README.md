@@ -15,7 +15,7 @@ expanded to support:
 - Updating Phabricator tasks mentioned in `!log` irc massages
 - Providing summary information for Phabricator manifest, differential, and
   pholio objects mentioned in irc messages
-- Logging `!log` messages to a MediaWiki wiki
+- Writing `!log` messages to a MediaWiki wiki
 - Posting `!log` messages to Twitter
 
 Install
@@ -142,4 +142,8 @@ $ ./bin/stashbot.sh tail
 
 License
 -------
-[GNU GPLv3+](//www.gnu.org/copyleft/gpl.html "GNU GPLv3+")
+[GNU GPLv3+](https://www.gnu.org/copyleft/gpl.html "GNU GPLv3+")
+
+Some code and much inspiration taken from:
+* [Adminbot](https://phabricator.wikimedia.org/diffusion/ODAC/)
+* [Jouncebot](https://phabricator.wikimedia.org/diffusion/GJOU/)
