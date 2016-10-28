@@ -71,4 +71,3 @@ class Client(object):
             # dumb things like LDAP hiccups.
             self.conn = None
             raise
-
