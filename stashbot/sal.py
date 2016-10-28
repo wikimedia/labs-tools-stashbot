@@ -17,12 +17,12 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ldap3
 import re
 import time
 import twitter
 
 from . import acls
+from . import ldap
 from . import mediawiki
 
 RE_PHAB = re.compile(r'\b(T\d+)\b')
@@ -38,10 +38,7 @@ class Logger(object):
         self.config = config
         self.logger = logger
 
-        self.ldap = ldap3.Connection(
-            self.config['ldap']['uri'],
-            auto_bind=True
-        )
+        self.ldap = ldap.Client(self.config['ldap']['uri'], self.logger)
         self._cached_wikis = {}
         self._cached_twitter = {}
         self._cached_projects = None
@@ -201,12 +198,13 @@ class Logger(object):
         """Get a list of cn values from LDAP for a given ou."""
         dn = 'ou=%s,%s' % (ou, self.config['ldap']['base'])
         try:
-            if self.ldap.search(
+            res = self.ldap.search(
                 dn,
                 '(objectclass=groupofnames)',
                 attributes=['cn']
-            ):
-                return [g.cn for g in self.ldap.entries]
+            )
+            if res is not False:
+                return [g.cn for g in res]
             else:
                 self.logger.error('Failed to get LDAP data for %s', dn)
         except:
