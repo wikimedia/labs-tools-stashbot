@@ -41,7 +41,7 @@ class Client(object):
         itself by discarding the current connection and possibly retrying the
         request. Only one retry will be done. Consecutive
         ldap3.LDAPCommunicationError exceptions will result in a raised
-        exception to the caller. If you do not want the default singel retry,
+        exception to the caller. If you do not want the default single retry,
         pass `retriable=False` as a named argument to the initial call.
         """
         if 'retriable' in kwargs:
