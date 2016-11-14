@@ -238,7 +238,7 @@ class Logger(object):
                 'date_format': '%Y-%m-%d',
             }
         )
-        logline = '* %02d:%02d %s: %s' % (
+        logline = '* {{SAL entry|1=%02d:%02d %s: %s}}' % (
             now.hour, now.minute, bang['nick'], bang['message'])
         summary = '%(nick)s: %(message)s' % bang
 
