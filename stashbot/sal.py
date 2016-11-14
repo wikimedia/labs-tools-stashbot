@@ -239,7 +239,11 @@ class Logger(object):
             }
         )
         logline = '* {{SAL entry|1=%02d:%02d %s: %s}}' % (
-            now.hour, now.minute, bang['nick'], bang['message'])
+            now.hour,
+            now.minute,
+            bang['nick'],
+            bang['message'].replace('|', '{{!}}')
+        )
         summary = '%(nick)s: %(message)s' % bang
 
         site = self._get_mediawiki_client(channel_conf['wiki'])
