@@ -56,8 +56,12 @@ case "$1" in
         git --no-pager log --stat HEAD..@{upstream} &&
         git rebase @{upstream}
         ;;
+    attach)
+        echo "Attaching to pod..."
+        exec kubectl exec -i -t $(_get_pod) /bin/bash
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|tail|update}"
+        echo "Usage: $0 {start|stop|restart|status|tail|update|attach}"
         exit 1
         ;;
 esac
