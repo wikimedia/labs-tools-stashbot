@@ -97,6 +97,7 @@
 
 	# tag
 	t = tag -n --list   # show tags with first line of annotation
+	push-for-review = push origin HEAD:refs/for/master
 
 [help]
 	autocorrect = 1

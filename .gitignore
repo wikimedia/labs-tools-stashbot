@@ -1,5 +1,6 @@
 *.pyc
 /.bash_history
+/.elasticsearch.ini
 /.kube
 /.lesshst
 /.python_history
