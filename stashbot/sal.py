@@ -91,7 +91,7 @@ class Logger(object):
         if channel == '#wikimedia-labs':
             bang['project'], bang['message'] = bang['message'].split(None, 1)
             if bang['project'] not in self._get_projects():
-                self.logger.warning('Invalid project %s', bang['project'])
+                self.logger.warning('Invalid project "%s"', bang['project'])
                 if respond_to_channel:
                     self.irc.respond(
                         conn, event,
@@ -173,23 +173,27 @@ class Logger(object):
 
     def _get_projects(self):
         """Get a list of valid Labs projects"""
-        if (self._cached_projects and
-            self._cached_projects[0] + 300 > time.time()
-        ):
+        if self._cached_projects and self._cached_projects[0] < time.time():
             # Clear expired cache
             self._cached_projects = None
+            self.logger.info('Cleared stale project cache')
 
         if self._cached_projects is None:
             projects = self._get_ldap_names('projects')
             servicegroups = self._get_ldap_names('servicegroups')
             if projects and servicegroups:
                 self._cached_projects = (
-                    time.time(),
+                    time.time() + 300,
                     projects + servicegroups
+                )
+                self.logger.info(
+                    'Caching project list until %d',
+                    self._cached_projects[0]
                 )
             else:
                 # One or both lists empty probably means LDAP failures
                 # Don't cache the result.
+                self.logger.warning('Returning partial project list')
                 return projects + servicegroups
 
         return self._cached_projects[1]
