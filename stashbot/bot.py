@@ -95,7 +95,13 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def on_nicknameinuse(self, conn, event):
         nick = conn.get_nickname()
         self.logger.warning('Requested nick "%s" in use', nick)
-        conn.nick(nick + '_')
+        alt_nick = self.config['irc']['nick'] + '_'
+        if nick == alt_nick:
+            # Primary and secondary nicks taken, abort connection
+            self.die(
+                'Cowardly refusing to fill the channel with copies of myself')
+
+        conn.nick(alt_nick)
         if 'password' in self.config['irc']:
             self.reactor.scheduler.execute_after(30, self.do_reclaim_nick)
 
@@ -126,6 +132,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         self.logger.warning(str(event))
 
     def on_pubmsg(self, conn, event):
+        if not self._have_primary_nick():
+            # Don't do anything if we haven't aquired the primary nick
+            return
+
         # Log all public channel messages we receive
         doc = self.es.event_to_doc(conn, event)
         self.do_write_to_elasticsearch(conn, event, doc)
@@ -214,9 +224,14 @@ class Stashbot(irc.bot.SingleServerIRCBot):
                     1, functools.partial(self.do_join, cdr))
 
     def do_reclaim_nick(self):
-        nick = self.connection.get_nickname()
-        if nick != self.config['irc']['nick']:
-            self.connection.nick(self.config['irc']['nick'])
+        if not self._have_primary_nick():
+            # REGAIN disconnects an old user session, or somebody
+            # attempting to use your nickname without authorization,
+            # then changes your nickname to the given nickname.
+            # This may not work, disconnecting you, if the target
+            # client reconnects automatically.
+            self.connection.privmsg('NickServ', 'regain %s %s' % (
+                self.config['irc']['nick'], self.config['irc']['password']))
 
     def do_ping(self):
         """Send a ping or disconnect if too many pings are outstanding."""
@@ -318,6 +333,10 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def _clean_nick(self, nick):
         """Remove common status indicators and normlize to lower case."""
         return nick.split('|', 1)[0].rstrip('`_').lower()
+
+    def _have_primary_nick(self):
+        """Do we currently have the desired nick?"""
+        return self.connection.get_nickname() == self.config['irc']['nick']
 
     def respond(self, conn, event, msg):
         """Respond to an event with a message."""
