@@ -17,7 +17,10 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import mwclient
-import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 
 class Client(object):
@@ -38,7 +41,7 @@ class Client(object):
         consumer_token=None, consumer_secret=None,
         access_token=None, access_secret=None
     ):
-        parts = urlparse.urlparse(url)
+        parts = urlparse(url)
         host = parts.netloc
         if parts.scheme != 'https':
             host = (parts.scheme, parts.netloc)
