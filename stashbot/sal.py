@@ -218,7 +218,8 @@ class Logger(object):
     def _store_in_es(self, bang):
         """Save a !log message to elasticsearch."""
         ret = self.es.index(index='sal', doc_type='sal', body=bang)
-        if ('phab' in self.config['sal'] and
+        if (
+            'phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
         ):
             m = RE_PHAB.findall(bang['message'])

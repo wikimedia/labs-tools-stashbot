@@ -152,7 +152,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
 
-        if (event.target not in self.config['phab'].get('notin', []) and
+        if (
+            event.target not in self.config['phab'].get('notin', []) and
             'echo' in self.config['phab'] and
             RE_PHAB_NOURL.search(msg)
         ):
@@ -264,7 +265,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
         ret = self.es.index(index='bash', doc_type='bash', body=bash)
 
         if 'created' in ret and ret['created'] is True:
-            self.respond(conn, event,
+            self.respond(
+                conn, event,
                 '%s: Stored quip at %s' % (
                     event.source.nick,
                     self.config['bash']['view_url'] % ret['_id']
@@ -272,7 +274,8 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             )
         else:
             self.logger.error('Failed to save document: %s', ret)
-            self.respond(conn, event,
+            self.respond(
+                conn, event,
                 '%s: Yuck. Something blew up when I tried to save that.' % (
                     event.source.nick,
                 )
