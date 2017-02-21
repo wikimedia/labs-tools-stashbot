@@ -38,7 +38,7 @@ Example configuration:
 ---
 irc:
   server: chat.freenode.net
-  port: 6667
+  port: 6697
   nick: mybotnick
   realname: My Real Name
   channels:

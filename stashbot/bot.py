@@ -18,11 +18,11 @@
 """IRC bot"""
 
 import collections
-import functools
-import irc.bot
-import irc.buffer
-import irc.client
-import irc.strings
+import ib3
+import ib3.auth
+import ib3.connection
+import ib3.mixins
+import ib3.nick
 import re
 import time
 
@@ -33,7 +33,16 @@ from . import sal
 RE_PHAB_NOURL = re.compile(r'(?:^|[^/%])\b([DMT]\d+)\b')
 
 
-class Stashbot(irc.bot.SingleServerIRCBot):
+class Stashbot(
+    ib3.auth.SASL,
+    ib3.connection.SSL,
+    ib3.mixins.DisconnectOnError,
+    ib3.mixins.PingServer,
+    ib3.mixins.RejoinOnBan,
+    ib3.mixins.RejoinOnKick,
+    ib3.nick.Regain,
+    ib3.Bot
+):
     def __init__(self, config, logger):
         """Create bot.
 
@@ -60,23 +69,15 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
         self.recent_phab = collections.defaultdict(dict)
 
-        # Ugh. A UTF-8 only world is a nice dream but the real world is all
-        # yucky and full of legacy encoding issues that should not crash my
-        # bot.
-        irc.buffer.LenientDecodingLineBuffer.errors = 'replace'
-        irc.client.ServerConnection.buffer_class = \
-            irc.buffer.LenientDecodingLineBuffer
-
         super(Stashbot, self).__init__(
-            [(self.config['irc']['server'], self.config['irc']['port'])],
-            self.config['irc']['nick'],
-            self.config['irc']['realname']
+            server_list=[
+                (self.config['irc']['server'], self.config['irc']['port'])
+            ],
+            nickname=self.config['irc']['nick'],
+            realname=self.config['irc']['realname'],
+            ident_password=self.config['irc']['password'],
+            channels=self.config['irc']['channels'],
         )
-
-        # Setup a connection check ping
-        self.pings = 0
-        self.reactor.scheduler.execute_every(
-            period=300, func=self.do_ping)
 
         # Clean phab recent cache every once in a while
         self.reactor.scheduler.execute_every(
@@ -85,26 +86,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def get_version(self):
         return 'Stashbot'
 
-    def on_welcome(self, conn, event):
-        self.logger.info('Connected to server %s', conn.get_server_name())
-        if 'password' in self.config['irc']:
-            self.do_identify()
-        else:
-            self.reactor.scheduler.execute_after(1, self.do_join)
-
-    def on_nicknameinuse(self, conn, event):
-        nick = conn.get_nickname()
-        self.logger.warning('Requested nick "%s" in use', nick)
-        alt_nick = self.config['irc']['nick'] + '_'
-        if nick == alt_nick:
-            # Primary and secondary nicks taken, abort connection
-            self.die(
-                'Cowardly refusing to fill the channel with copies of myself')
-
-        conn.nick(alt_nick)
-        if 'password' in self.config['irc']:
-            self.reactor.scheduler.execute_after(30, self.do_reclaim_nick)
-
     def on_join(self, conn, event):
         nick = event.source.nick
         if nick == conn.get_nickname():
@@ -112,27 +93,12 @@ class Stashbot(irc.bot.SingleServerIRCBot):
 
     def on_privnotice(self, conn, event):
         self.logger.warning(str(event))
-        msg = event.arguments[0]
-        if event.source.nick == 'NickServ':
-            if 'NickServ identify' in msg:
-                self.logger.info('Authentication requested by Nickserv')
-                if 'password' in self.config['irc']:
-                    self.do_identify()
-                else:
-                    self.logger.error('No password in config!')
-                    self.die()
-            elif 'You are now identified' in msg:
-                self.logger.debug('Authenticating succeeded')
-                self.reactor.scheduler.execute_after(1, self.do_join)
-            elif 'Invalid password' in msg:
-                self.logger.error('Password invalid. Check your config!')
-                self.die()
 
     def on_pubnotice(self, conn, event):
         self.logger.warning(str(event))
 
     def on_pubmsg(self, conn, event):
-        if not self._have_primary_nick():
+        if not self.has_primary_nick():
             # Don't do anything if we haven't aquired the primary nick
             return
 
@@ -176,75 +142,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
             self.do_bash(conn, event, doc)
         else:
             self.respond(conn, event, event.arguments[0][::-1])
-
-    def on_pong(self, conn, event):
-        """Clear ping count when a pong is received."""
-        self.pings = 0
-
-    def on_error(self, conn, event):
-        """Log errors and disconnect."""
-        self.logger.warning(str(event))
-        conn.disconnect()
-
-    def on_kick(self, conn, event):
-        """Attempt to rejoin if kicked from a channel."""
-        nick = event.arguments[0]
-        channel = event.target
-        if nick == conn.get_nickname():
-            self.logger.warn(
-                'Kicked from %s by %s', channel, event.source.nick)
-            self.reactor.scheduler.execute_after(
-                30, functools.partial(conn.join, channel))
-
-    def on_bannedfromchan(self, conn, event):
-        """Attempt to rejoin if banned from a channel."""
-        self.logger.warning(str(event))
-        self.reactor.scheduler.execute_after(
-            60, functools.partial(conn.join, event.arguments[0]))
-
-    def do_identify(self):
-        """Send NickServ our username and password."""
-        self.logger.info('Authentication requested by Nickserv')
-        self.connection.privmsg('NickServ', 'identify %s %s' % (
-            self.config['irc']['nick'], self.config['irc']['password']))
-
-    def do_join(self, channels=None):
-        """Join the next channel in our join list."""
-        if channels is None:
-            channels = self.config['irc']['channels']
-        try:
-            car, cdr = channels[0], channels[1:]
-        except (IndexError, TypeError):
-            self.logger.exception('Failed to find channel to join.')
-        else:
-            self.logger.info('Joining %s', car)
-            self.connection.join(car)
-            if cdr:
-                self.reactor.scheduler.execute_after(
-                    1, functools.partial(self.do_join, cdr))
-
-    def do_reclaim_nick(self):
-        if not self._have_primary_nick():
-            # REGAIN disconnects an old user session, or somebody
-            # attempting to use your nickname without authorization,
-            # then changes your nickname to the given nickname.
-            # This may not work, disconnecting you, if the target
-            # client reconnects automatically.
-            self.connection.privmsg('NickServ', 'regain %s %s' % (
-                self.config['irc']['nick'], self.config['irc']['password']))
-
-    def do_ping(self):
-        """Send a ping or disconnect if too many pings are outstanding."""
-        if self.pings >= 2:
-            self.logger.warning('Connection timed out. Disconnecting.')
-            self.disconnect()
-            self.pings = 0
-        else:
-            try:
-                self.connection.ping('keep-alive')
-                self.pings += 1
-            except irc.client.ServerNotConnectedError:
-                pass
 
     def do_write_to_elasticsearch(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
@@ -333,10 +230,6 @@ class Stashbot(irc.bot.SingleServerIRCBot):
     def _clean_nick(self, nick):
         """Remove common status indicators and normlize to lower case."""
         return nick.split('|', 1)[0].rstrip('`_').lower()
-
-    def _have_primary_nick(self):
-        """Do we currently have the desired nick?"""
-        return self.connection.get_nickname() == self.config['irc']['nick']
 
     def respond(self, conn, event, msg):
         """Respond to an event with a message."""
