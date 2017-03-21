@@ -59,7 +59,8 @@ class Logger(object):
                 '!log message on unexpected channel %s', channel)
             if respond_to_channel:
                 self.irc.respond(
-                    conn, event, 'Not expecting to hear !log here')
+                    conn, event,
+                    '%s: Not expecting to hear !log here' % bang['nick'])
             return
 
         if not self._check_sal_acl(channel, event.source):
@@ -81,7 +82,8 @@ class Logger(object):
         if bang['message'] == '':
             if respond_to_channel:
                 self.irc.respond(
-                    conn, event, 'Message missing. Nothing logged.')
+                    conn, event,
+                    '%s: Message missing. Nothing logged.' % bang['nick'])
             return
 
         if bang['nick'] == 'logmsgbot':
@@ -95,13 +97,19 @@ class Logger(object):
                 if respond_to_channel:
                     self.irc.respond(
                         conn, event,
-                        'Unknown project "%s"' % bang['project']
+                        '%s: Unknown project "%s"' % (
+                            bang['nick'],
+                            bang['project']
+                        )
                     )
                     tool = 'tools.%s' % bang['project']
                     if tool in self._get_projects():
                         self.irc.respond(
                             conn, event,
-                            'Did you mean to say "%s" instead?' % tool
+                            '%s: Did you mean to say "%s" instead?' % (
+                                bang['nick'],
+                                tool
+                            )
                         )
                 return
 
@@ -135,8 +143,10 @@ class Logger(object):
                 if respond_to_channel:
                     self.irc.respond(
                         conn, event,
-                        'Failed to log message to wiki. '
-                        'Somebody should check the error logs.'
+                        (
+                            '%s: Failed to log message to wiki. '
+                            'Somebody should check the error logs.'
+                        ) % bang['nick']
                     )
 
         if 'twitter' in channel_conf:
