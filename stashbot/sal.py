@@ -90,7 +90,7 @@ class Logger(object):
             # logmsgbot is expected to tell us who is running the command
             bang['nick'], bang['message'] = bang['message'].split(None, 1)
 
-        if channel == '#wikimedia-labs':
+        if channel in ['#wikimedia-labs', '#wikimedia-cloud']:
             bang['project'], bang['message'] = bang['message'].split(None, 1)
             if bang['project'] not in self._get_projects():
                 self.logger.warning('Invalid project "%s"', bang['project'])
