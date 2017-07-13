@@ -47,8 +47,7 @@ class Client(object):
         """Store a document in Elasticsearch."""
         try:
             return self.es.index(
-                index=index, doc_type=doc_type, body=body,
-                consistency="one")
+                index=index, doc_type=doc_type, body=body)
         except elasticsearch.ConnectionError as e:
             self.logger.exception(
                 'Failed to log to elasticsearch: %s', e.error)
