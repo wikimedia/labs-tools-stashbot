@@ -106,10 +106,6 @@ class Stashbot(
         doc = self.es.event_to_doc(conn, event)
         self.do_write_to_elasticsearch(conn, event, doc)
 
-        ignore = self.config['irc'].get('ignore', [])
-        if self._clean_nick(doc['nick']) in ignore:
-            return
-
         # Look for special messages
         msg = event.arguments[0]
 
@@ -127,6 +123,10 @@ class Stashbot(
 
         elif msg.startswith('!bash '):
             self.do_bash(conn, event, doc)
+
+        ignore = self.config['irc'].get('ignore', [])
+        if self._clean_nick(doc['nick']) in ignore:
+            return
 
         if (
             event.target not in self.config['phab'].get('notin', []) and
