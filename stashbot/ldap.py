@@ -65,7 +65,7 @@ class Client(object):
                 return self.search(*args, retriable=False, **kwargs)
             else:
                 raise
-        except:
+        except Exception:
             # If anything at all goes wrong, ditch the connection out of
             # paranoia. We really don't want to have to restart the bot for
             # dumb things like LDAP hiccups.

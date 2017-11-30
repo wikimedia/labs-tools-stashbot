@@ -208,7 +208,7 @@ class Stashbot(
                     continue
             try:
                 info = self.phab.taskInfo(task)
-            except:
+            except Exception:
                 self.logger.exception('Failed to lookup info for %s', task)
             else:
                 self.respond(conn, event, self.config['phab']['echo'] % info)

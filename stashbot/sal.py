@@ -138,7 +138,7 @@ class Logger(object):
                 if respond_to_channel:
                     self.irc.respond(
                         conn, event, 'Logged the message at %s' % url)
-            except:
+            except Exception:
                 self.logger.exception('Error writing to wiki')
                 if respond_to_channel:
                     self.irc.respond(
@@ -152,7 +152,7 @@ class Logger(object):
         if 'twitter' in channel_conf:
             try:
                 self._tweet(bang, channel_conf)
-            except:
+            except Exception:
                 self.logger.exception('Error writing to twitter')
 
     def _log_duplicate(self, conn, event, doc, **kwargs):
@@ -221,7 +221,7 @@ class Logger(object):
                 return [g.cn for g in res]
             else:
                 self.logger.error('Failed to get LDAP data for %s', dn)
-        except:
+        except Exception:
             self.logger.exception('Exception getting LDAP data for %s', dn)
         return []
 
@@ -240,7 +240,7 @@ class Logger(object):
             for task in m:
                 try:
                     self.phab.comment(task, msg)
-                except:
+                except Exception:
                     self.logger.exception('Failed to add note to phab task')
 
     def _write_to_wiki(self, bang, channel_conf):
