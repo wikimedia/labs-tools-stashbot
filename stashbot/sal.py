@@ -130,7 +130,7 @@ class Logger(object):
                         channel='#wikimedia-releng'
                     )
 
-        self._store_in_es(bang)
+        self._store_in_es(bang, do_phab=respond_to_channel)
 
         if 'wiki' in channel_conf:
             try:
@@ -225,10 +225,11 @@ class Logger(object):
             self.logger.exception('Exception getting LDAP data for %s', dn)
         return []
 
-    def _store_in_es(self, bang):
+    def _store_in_es(self, bang, do_phab=True):
         """Save a !log message to elasticsearch."""
         ret = self.es.index(index='sal', doc_type='sal', body=bang)
         if (
+            do_phab and
             'phab' in self.config['sal'] and
             'created' in ret and ret['created'] is True
         ):
