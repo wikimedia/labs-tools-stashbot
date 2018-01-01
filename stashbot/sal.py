@@ -91,7 +91,19 @@ class Logger(object):
             bang['nick'], bang['message'] = bang['message'].split(None, 1)
 
         if channel in ['#wikimedia-labs', '#wikimedia-cloud']:
-            bang['project'], bang['message'] = bang['message'].split(None, 1)
+            parts = bang['message'].split(None, 1)
+            if len(parts) < 2:
+                if respond_to_channel:
+                    self.irc.respond(
+                        conn, event,
+                        (
+                            '%s: Missing project or message? '
+                            'Expected !log <project> <message>'
+                        ) % bang['nick']
+                    )
+                return
+
+            bang['project'], bang['message'] = parts
             if bang['project'] not in self._get_projects():
                 self.logger.warning('Invalid project "%s"', bang['project'])
                 if respond_to_channel:
