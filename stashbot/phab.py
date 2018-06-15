@@ -43,9 +43,18 @@ class Client(object):
 
     def taskInfo(self, task):
         r = self.post('phid.lookup', {'names': [task]})
-        if task in r:
-            return r[task]
-        raise Exception('Task %s not found' % task)
+        if task not in r:
+            raise Exception('Task %s not found' % task)
+
+        # Check if it's a security bug
+        phid = r[task]['phid']
+        req = self.post('maniphest.query', {'phids': [phid]})
+        security_topic = req[phid].get('auxiliary', {}).get(
+            'std:maniphest:security_topic')
+        if security_topic and security_topic != 'default':
+            raise Exception('Task %s is a security bug, sorry' % task)
+
+        return r[task]
 
     def comment(self, task, comment):
         """Add a comment to a task.
