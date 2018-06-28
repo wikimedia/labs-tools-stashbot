@@ -194,25 +194,25 @@ class Stashbot(
             )
 
     def do_phabecho(self, conn, event, doc):
-        """Give links to Phabricator tasks"""
+        """Give links to Phabricator objects"""
         channel = event.target
         now = time.time()
         cutoff = self.get_phab_echo_cutoff(channel)
-        for task in set(RE_PHAB_NOURL.findall(doc['message'])):
-            if task in self.recent_phab[channel]:
-                if self.recent_phab[channel][task] > cutoff:
+        for label in set(RE_PHAB_NOURL.findall(doc['message'])):
+            if label in self.recent_phab[channel]:
+                if self.recent_phab[channel][label] > cutoff:
                     # Don't spam a channel with links
                     self.logger.debug(
                         'Ignoring %s; last seen @%d',
-                        task, self.recent_phab[channel][task])
+                        label, self.recent_phab[channel][label])
                     continue
             try:
-                info = self.phab.taskInfo(task)
+                info = self.phab.lookupPhid(label)
             except Exception:
-                self.logger.exception('Failed to lookup info for %s', task)
+                self.logger.exception('Failed to lookup info for %s', label)
             else:
                 self.respond(conn, event, self.config['phab']['echo'] % info)
-                self.recent_phab[channel][task] = now
+                self.recent_phab[channel][label] = now
 
     def get_phab_echo_cutoff(self, channel):
         """Get phab echo delay for the given channel."""

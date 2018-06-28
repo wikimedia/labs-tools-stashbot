@@ -41,27 +41,36 @@ class Client(object):
             raise Exception(resp['error_info'])
         return resp['result']
 
-    def taskInfo(self, task):
-        r = self.post('phid.lookup', {'names': [task]})
-        if task not in r:
-            raise Exception('Task %s not found' % task)
+    def lookupPhid(self, label):
+        """Lookup information on a Phab object by name."""
+        r = self.post('phid.lookup', {'names': [label]})
+        if label in r:
+            obj = r[label]
+            if obj['type'] == 'TASK':
+                # T180081: Ensure that we don't leak information about
+                # security tasks even if the bot somehow has access to the
+                # task.
+                info = self.taskDetails(obj['phid'])
+                aux = info.get('auxiliary', {})
+                st = aux.get('std:maniphest:security_topic')
+                if st and st != 'default':
+                    raise Exception('Task %s is a security bug.' % label)
+            return obj
+        raise Exception('No object found for %s' % label)
 
-        # Check if it's a security bug
-        phid = r[task]['phid']
-        req = self.post('maniphest.query', {'phids': [phid]})
-        security_topic = req[phid].get('auxiliary', {}).get(
-            'std:maniphest:security_topic')
-        if security_topic and security_topic != 'default':
-            raise Exception('Task %s is a security bug, sorry' % task)
-
-        return r[task]
+    def taskDetails(self, phid):
+        """Lookup details of a Maniphest task."""
+        r = self.post('maniphest.query', {'phids': [phid]})
+        if phid in r:
+            return r[phid]
+        raise Exception('No task found for phid %s' % phid)
 
     def comment(self, task, comment):
         """Add a comment to a task.
         :param task: Task number (e.g. T12345)
         :param comment: Comment to add to task
         """
-        phid = self.taskInfo(task)['phid']
+        phid = self.lookupPhid(task)['phid']
         self.post('maniphest.update', {
             'phid': phid,
             'comments': comment,
