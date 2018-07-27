@@ -70,4 +70,10 @@ class Client(object):
         :param comment: Comment to add to task
         """
         phid = self.lookupPhid(task)["phid"]
-        self.post("maniphest.update", {"phid": phid, "comments": comment})
+        self.post(
+            "maniphest.edit",
+            {
+                "objectIdentifier": phid,
+                "transactions": [{"type": "comment", "value": comment}],
+            },
+        )
