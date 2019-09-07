@@ -310,7 +310,7 @@ class Logger(object):
 
     def _tweet(self, bang, channel_conf):
         """Post a tweet."""
-        update = ("%(nick)s: %(message)s" % bang)[:140]
+        update = ("%(nick)s: %(message)s" % bang)[:280]
         client = self._get_twitter_client(channel_conf["twitter"])
         client.PostUpdate(update)
 
