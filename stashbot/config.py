@@ -26,9 +26,9 @@ def yaml_unicode_str(self, node):
 
 
 # Attach custom unicode factory to string events
-yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', yaml_unicode_str)
-yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str', yaml_unicode_str)
+yaml.Loader.add_constructor("tag:yaml.org,2002:str", yaml_unicode_str)
+yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", yaml_unicode_str)
 
 
 def load(filename):
-    return yaml.load(open(filename, 'r'))
+    return yaml.load(open(filename, "r"))

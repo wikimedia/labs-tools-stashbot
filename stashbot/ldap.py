@@ -36,19 +36,16 @@ class Client(object):
         for resp in self.conn.response:
             ret_items.append(resp)
 
-        cookie = self.conn.result['controls'][
-            '1.2.840.113556.1.4.319'
-            ]['value']['cookie']
+        cookie = self.conn.result["controls"]["1.2.840.113556.1.4.319"][
+            "value"
+        ]["cookie"]
         while cookie:
             self.conn.search(
-                *args,
-                **dict(kwargs,
-                       paged_size=1000,
-                       paged_cookie=cookie)
+                *args, **dict(kwargs, paged_size=1000, paged_cookie=cookie)
             )
-            cookie = self.conn.result['controls'][
-                '1.2.840.113556.1.4.319'
-                ]['value']['cookie']
+            cookie = self.conn.result["controls"]["1.2.840.113556.1.4.319"][
+                "value"
+            ]["cookie"]
             for resp in self.conn.response:
                 ret_items.append(resp)
 
@@ -68,9 +65,9 @@ class Client(object):
         exception to the caller. If you do not want the default single retry,
         pass `retriable=False` as a named argument to the initial call.
         """
-        if 'retriable' in kwargs:
-            retriable = kwargs['retriable']
-            del kwargs['retriable']
+        if "retriable" in kwargs:
+            retriable = kwargs["retriable"]
+            del kwargs["retriable"]
         else:
             retriable = True
 
@@ -85,7 +82,8 @@ class Client(object):
             self.conn = None
             if retriable:
                 self.logger.exception(
-                    'LDAP server connection barfed; retrying')
+                    "LDAP server connection barfed; retrying"
+                )
                 return self.search(*args, retriable=False, **kwargs)
             else:
                 raise

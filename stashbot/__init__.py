@@ -17,10 +17,6 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 from .bot import Stashbot
 
-__all__ = (
-    'Stashbot',
-)
+__all__ = ("Stashbot",)
 
-any((
-    Stashbot,
-))
+any((Stashbot,))

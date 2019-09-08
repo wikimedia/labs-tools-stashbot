@@ -23,55 +23,51 @@ import requests
 
 class Client(object):
     """Phabricator client"""
+
     def __init__(self, url, username, key):
         self.url = url
         self.username = username
-        self.session = {
-            'token': key,
-        }
+        self.session = {"token": key}
 
     def post(self, path, data):
-        data['__conduit__'] = self.session
-        r = requests.post('%s/api/%s' % (self.url, path), data={
-            'params': json.dumps(data),
-            'output': 'json',
-        })
+        data["__conduit__"] = self.session
+        r = requests.post(
+            "%s/api/%s" % (self.url, path),
+            data={"params": json.dumps(data), "output": "json"},
+        )
         resp = r.json()
-        if resp['error_code'] is not None:
-            raise Exception(resp['error_info'])
-        return resp['result']
+        if resp["error_code"] is not None:
+            raise Exception(resp["error_info"])
+        return resp["result"]
 
     def lookupPhid(self, label):
         """Lookup information on a Phab object by name."""
-        r = self.post('phid.lookup', {'names': [label]})
+        r = self.post("phid.lookup", {"names": [label]})
         if label in r:
             obj = r[label]
-            if obj['type'] == 'TASK':
+            if obj["type"] == "TASK":
                 # T180081: Ensure that we don't leak information about
                 # security tasks even if the bot somehow has access to the
                 # task.
-                info = self.taskDetails(obj['phid'])
-                aux = info.get('auxiliary', {})
-                st = aux.get('std:maniphest:security_topic')
-                if st and st != 'default':
-                    raise Exception('Task %s is a security bug.' % label)
+                info = self.taskDetails(obj["phid"])
+                aux = info.get("auxiliary", {})
+                st = aux.get("std:maniphest:security_topic")
+                if st and st != "default":
+                    raise Exception("Task %s is a security bug." % label)
             return obj
-        raise Exception('No object found for %s' % label)
+        raise Exception("No object found for %s" % label)
 
     def taskDetails(self, phid):
         """Lookup details of a Maniphest task."""
-        r = self.post('maniphest.query', {'phids': [phid]})
+        r = self.post("maniphest.query", {"phids": [phid]})
         if phid in r:
             return r[phid]
-        raise Exception('No task found for phid %s' % phid)
+        raise Exception("No task found for phid %s" % phid)
 
     def comment(self, task, comment):
         """Add a comment to a task.
         :param task: Task number (e.g. T12345)
         :param comment: Comment to add to task
         """
-        phid = self.lookupPhid(task)['phid']
-        self.post('maniphest.update', {
-            'phid': phid,
-            'comments': comment,
-        })
+        phid = self.lookupPhid(task)["phid"]
+        self.post("maniphest.update", {"phid": phid, "comments": comment})

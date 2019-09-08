@@ -21,45 +21,18 @@ import irc.client
 
 
 def test_check():
-    common_rules = {
-        'allow': ['*!*@test/allowed'],
-        'deny': ['*!*@test/denied'],
-    }
+    common_rules = {"allow": ["*!*@test/allowed"], "deny": ["*!*@test/denied"]}
     tests = [
-        [
-            {},
-            'nick!user@host',
-            True
-        ],
-        [
-            common_rules,
-            'nick!user@host',
-            True
-        ],
-        [
-            common_rules,
-            'nick!user@test/allowed',
-            True
-        ],
-        [
-            dict(common_rules, default=False),
-            'nick!~user@test/allowed',
-            True
-        ],
-        [
-            {'default': False},
-            'nick!user@host',
-            False
-        ],
-        [
-            common_rules,
-            'nick!user@test/denied',
-            False
-        ],
+        [{}, "nick!user@host", True],
+        [common_rules, "nick!user@host", True],
+        [common_rules, "nick!user@test/allowed", True],
+        [dict(common_rules, default=False), "nick!~user@test/allowed", True],
+        [{"default": False}, "nick!user@host", False],
+        [common_rules, "nick!user@test/denied", False],
         [
             dict(common_rules, allow=[], default=False),
-            'nick!user@test/allowed',
-            False
+            "nick!user@test/allowed",
+            False,
         ],
     ]
     for args in tests:
@@ -72,15 +45,15 @@ def run_check(config, source, expect):
 
 
 def test_check_mask():
-    source = irc.client.NickMask('nick!user@host')
+    source = irc.client.NickMask("nick!user@host")
     tests = [
-        ['nick!user@host', True],
-        ['*!user@host', True],
-        ['*!*user@host', True],
-        ['*!*@*host', True],
-        ['*!*@*', True],
-        ['*!*user@*', True],
-        ['*!user@host2', False],
+        ["nick!user@host", True],
+        ["*!user@host", True],
+        ["*!*user@host", True],
+        ["*!*@*host", True],
+        ["*!*@*", True],
+        ["*!*user@*", True],
+        ["*!user@host2", False],
     ]
     for args in tests:
         yield run_check_mask, args[0], source, args[1]

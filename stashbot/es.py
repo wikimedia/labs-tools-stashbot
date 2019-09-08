@@ -20,7 +20,7 @@ import elasticsearch
 import re
 import time
 
-RE_STYLE = re.compile(r'[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?')
+RE_STYLE = re.compile(r"[\x02\x0F\x16\x1D\x1F]|\x03(\d{,2}(,\d{,2})?)?")
 
 
 class Client(object):
@@ -33,22 +33,22 @@ class Client(object):
     def event_to_doc(self, conn, event):
         """Make an Elasticsearch document from an IRC event."""
         return {
-            'message': RE_STYLE.sub('', event.arguments[0]),
-            '@timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-            'type': 'irc',
-            'user': event.source,
-            'channel': event.target,
-            'nick': event.source.nick,
-            'server': conn.get_server_name(),
-            'host': event.source.host,
+            "message": RE_STYLE.sub("", event.arguments[0]),
+            "@timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "type": "irc",
+            "user": event.source,
+            "channel": event.target,
+            "nick": event.source.nick,
+            "server": conn.get_server_name(),
+            "host": event.source.host,
         }
 
     def index(self, index, doc_type, body):
         """Store a document in Elasticsearch."""
         try:
-            return self.es.index(
-                index=index, doc_type=doc_type, body=body)
+            return self.es.index(index=index, doc_type=doc_type, body=body)
         except elasticsearch.ConnectionError as e:
             self.logger.exception(
-                'Failed to log to elasticsearch: %s', e.error)
+                "Failed to log to elasticsearch: %s", e.error
+            )
             return {}

@@ -17,6 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import mwclient
+
 try:
     from urlparse import urlparse
 except ImportError:
@@ -27,23 +28,30 @@ class Client(object):
     """MediaWiki api client."""
 
     def __init__(
-        self, url,
-        consumer_token=None, consumer_secret=None,
-        access_token=None, access_secret=None
+        self,
+        url,
+        consumer_token=None,
+        consumer_secret=None,
+        access_token=None,
+        access_secret=None,
     ):
         self.url = url
         self.site = self._site_for_url(
-            url, consumer_token, consumer_secret, access_token, access_secret)
+            url, consumer_token, consumer_secret, access_token, access_secret
+        )
 
     @classmethod
     def _site_for_url(
-        cls, url,
-        consumer_token=None, consumer_secret=None,
-        access_token=None, access_secret=None
+        cls,
+        url,
+        consumer_token=None,
+        consumer_secret=None,
+        access_token=None,
+        access_secret=None,
     ):
         parts = urlparse(url)
         host = parts.netloc
-        if parts.scheme != 'https':
+        if parts.scheme != "https":
             host = (parts.scheme, parts.netloc)
         force_login = consumer_token is not None
         return mwclient.Site(
@@ -52,8 +60,8 @@ class Client(object):
             consumer_secret=consumer_secret,
             access_token=access_token,
             access_secret=access_secret,
-            clients_useragent='https://tools.wmflabs.org/stashbot/',
-            force_login=force_login
+            clients_useragent="https://tools.wmflabs.org/stashbot/",
+            force_login=force_login,
         )
 
     def get_page(self, title, follow_redirects=True):
@@ -65,7 +73,10 @@ class Client(object):
 
     def get_url_for_revision(self, revision):
         result = self.site.api(
-            'query', formatversion=2,
-            prop='info',
-            inprop='url', revids=revision)
-        return result['query']['pages'][0]['canonicalurl']
+            "query",
+            formatversion=2,
+            prop="info",
+            inprop="url",
+            revids=revision,
+        )
+        return result["query"]["pages"][0]["canonicalurl"]

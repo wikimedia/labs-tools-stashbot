@@ -21,29 +21,34 @@ import logging
 import stashbot
 import stashbot.config
 
-parser = argparse.ArgumentParser(description='Stashbot')
+parser = argparse.ArgumentParser(description="Stashbot")
 parser.add_argument(
-    '-c', '--config',
-    default='etc/config.yaml', help='Configuration file')
+    "-c", "--config", default="etc/config.yaml", help="Configuration file"
+)
 parser.add_argument(
-    '-v', '--verbose', action='count',
-    default=0, dest='loglevel', help='Increase logging verbosity')
+    "-v",
+    "--verbose",
+    action="count",
+    default=0,
+    dest="loglevel",
+    help="Increase logging verbosity",
+)
 args = parser.parse_args()
 
 logging.basicConfig(
     level=max(logging.DEBUG, logging.WARNING - (10 * args.loglevel)),
-    format='%(asctime)s %(name)-12s %(levelname)-8s: %(message)s',
-    datefmt='%Y-%m-%dT%H:%M:%SZ'
+    format="%(asctime)s %(name)-12s %(levelname)-8s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%SZ",
 )
 logging.captureWarnings(True)
 
-log = logging.getLogger('Stashbot')
+log = logging.getLogger("Stashbot")
 bot = stashbot.Stashbot(stashbot.config.load(args.config), log)
 try:
     bot.start()
 except KeyboardInterrupt:
     bot.disconnect()
 except Exception:
-    log.exception('Killed by unhandled exception')
+    log.exception("Killed by unhandled exception")
     bot.disconnect()
     raise SystemExit()

@@ -36,14 +36,15 @@ def check(config, source):
     :param source: message source to check
     :return: bool
     """
-    order = config.get('order', 'allow,deny').split(',')
+    order = config.get("order", "allow,deny").split(",")
     for check_type in order:
-            action = check_list(
-                config.get(check_type, []), source, check_type == 'allow')
-            if action is not None:
-                return action
+        action = check_list(
+            config.get(check_type, []), source, check_type == "allow"
+        )
+        if action is not None:
+            return action
 
-    return config.get('default', 'allow') == 'allow'
+    return config.get("default", "allow") == "allow"
 
 
 def check_list(masks, source, match_action):
@@ -68,7 +69,7 @@ def check_mask(mask, source):
     """
     nick_mask = irc.client.NickMask(mask)
     return (
-        fnmatch.fnmatch(source.nick, nick_mask.nick) and
-        fnmatch.fnmatch(source.user, nick_mask.user) and
-        fnmatch.fnmatch(source.host, nick_mask.host)
+        fnmatch.fnmatch(source.nick, nick_mask.nick)
+        and fnmatch.fnmatch(source.user, nick_mask.user)
+        and fnmatch.fnmatch(source.host, nick_mask.host)
     )
