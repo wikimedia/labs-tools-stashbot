@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of bd808's stashbot application
 # Copyright (C) 2015 Bryan Davis and contributors

@@ -9,10 +9,10 @@ POD_NAME=stashbot.bot
 CONFIG=etc/config-k8s.yaml
 
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
-VENV=venv-k8s-py2
-if [[ -f ${TOOL_DIR}/${VENV}/bin/activate ]]; then
+VENV=${TOOL_DIR}/venv-k8s-py35
+if [[ -f ${VENV}/bin/activate ]]; then
     # Enable virtualenv
-    source ${TOOL_DIR}/${VENV}/bin/activate
+    source ${VENV}/bin/activate
 fi
 
 _get_pod() {

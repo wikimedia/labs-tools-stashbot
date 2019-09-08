@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: bot
-          image: docker-registry.tools.wmflabs.org/toollabs-python2-base:latest
+          image: docker-registry.tools.wmflabs.org/toollabs-python35-base:latest
           command: [ "/data/project/stashbot/bin/stashbot.sh", "run" ]
           workingDir: /data/project/stashbot
           env:
