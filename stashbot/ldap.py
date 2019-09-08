@@ -30,27 +30,6 @@ class Client(object):
     def _connect(self):
         return ldap3.Connection(self._uri, auto_bind=True, auto_range=True)
 
-    def _get_all_entries(self, *args, **kwargs):
-        self.conn.search(*args, **dict(kwargs, paged_size=1000))
-        ret_items = []
-        for resp in self.conn.response:
-            ret_items.append(resp)
-
-        cookie = self.conn.result["controls"]["1.2.840.113556.1.4.319"][
-            "value"
-        ]["cookie"]
-        while cookie:
-            self.conn.search(
-                *args, **dict(kwargs, paged_size=1000, paged_cookie=cookie)
-            )
-            cookie = self.conn.result["controls"]["1.2.840.113556.1.4.319"][
-                "value"
-            ]["cookie"]
-            for resp in self.conn.response:
-                ret_items.append(resp)
-
-        return ret_items
-
     def search(self, *args, **kwargs):
         """A fairly thin wrapper around ldap3.Connection.search.
 
@@ -71,13 +50,18 @@ class Client(object):
         else:
             retriable = True
 
+        if "time_limit" not in kwargs:
+            # Do not allow any search to take over 60 seconds
+            kwargs["time_limit"] = 60
+
+        # Get a list of results rather than a generator so that all the LDAP
+        # error handling happens right here.
+        kwargs["generator"] = False
+
         try:
             if self.conn is None:
                 self.conn = self._connect()
-            if self.conn.search(*args, **kwargs):
-                return self._get_all_entries(*args, **kwargs)
-            else:
-                return False
+            return self.conn.extend.standard.paged_search(*args, **kwargs)
         except ldap3.LDAPCommunicationError:
             self.conn = None
             if retriable:

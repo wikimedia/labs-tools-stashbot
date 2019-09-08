@@ -238,7 +238,7 @@ class Logger(object):
             res = self.ldap.search(
                 dn, "(objectclass=groupofnames)", attributes=["cn"]
             )
-            if res is not False:
+            if res:
                 return [g["attributes"]["cn"][0] for g in res]
             else:
                 self.logger.error("Failed to get LDAP data for %s", dn)
