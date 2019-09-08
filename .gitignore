@@ -3,6 +3,7 @@
 /.elasticsearch.ini
 /.kube
 /.lesshst
+/.python-version
 /.python_history
 /.tox
 /.viminfo
