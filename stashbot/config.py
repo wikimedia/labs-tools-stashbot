@@ -31,4 +31,4 @@ yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", yaml_unicode_str)
 
 
 def load(filename):
-    return yaml.load(open(filename, "r"))
+    return yaml.safe_load(open(filename, "r"))
