@@ -18,7 +18,6 @@
 
 import argparse
 import logging
-import logging.handlers
 import os.path
 
 import stashbot
@@ -47,9 +46,7 @@ logging.captureWarnings(True)
 
 # Write a log file of severe errors
 # FIXME: make this configurable
-fh = logging.handlers.FileHandler(
-    os.path.expanduser("~/stashbot.log"), delay=True
-)
+fh = logging.FileHandler(os.path.expanduser("~/stashbot.log"), delay=True)
 fh.setLevel(logging.ERROR)
 logging.getLogger().addHandler(fh)
 
