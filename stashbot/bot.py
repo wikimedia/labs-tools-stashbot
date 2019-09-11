@@ -229,9 +229,9 @@ class Stashbot(
 
     def do_clean_recent_phab(self):
         """Clean old items out of the recent_phab cache."""
-        for channel in self.recent_phab.keys():
+        for channel in list(self.recent_phab.keys()):
             cutoff = self.get_phab_echo_cutoff(channel)
-            for item in self.recent_phab[channel].keys():
+            for item in list(self.recent_phab[channel].keys()):
                 if self.recent_phab[channel][item] < cutoff:
                     del self.recent_phab[channel][item]
 
