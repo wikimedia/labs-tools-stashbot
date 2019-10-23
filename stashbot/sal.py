@@ -25,7 +25,10 @@ from . import acls
 from . import ldap
 from . import mediawiki
 
+
 RE_PHAB = re.compile(r"\b(T\d+)\b")
+RE_CURLY_OPEN = re.compile(r"(?<!{)({)(?!{)")
+RE_CURLY_CLOSE = re.compile(r"(?<!})(})(?!})")
 
 
 class Logger(object):
@@ -265,6 +268,20 @@ class Logger(object):
                 except Exception:
                     self.logger.exception("Failed to add note to phab task")
 
+    @staticmethod
+    def safe_arg(s):
+        """Make the provided string safe for use as an argument to a wikitext
+        template.
+        """
+        # Wrap lone `{` and `}` in `<nowiki>...</nowiki>`
+        s = RE_CURLY_OPEN.sub(r"<nowiki>\1</nowiki>", s)
+        s = RE_CURLY_CLOSE.sub(r"<nowiki>\1</nowiki>", s)
+
+        # Replace all embedded `|` with the `{{!}}` magic word
+        s = s.replace("|", "{{!}}")
+
+        return s
+
     def _write_to_wiki(self, bang, channel_conf):
         """Write a !log message to a wiki page."""
         now = datetime.datetime.utcnow()
@@ -277,7 +294,7 @@ class Logger(object):
             now.hour,
             now.minute,
             bang["nick"],
-            bang["message"].replace("|", "{{!}}"),
+            Logger.safe_arg(bang["message"]),
         )
         summary = "%(nick)s: %(message)s" % bang
 
