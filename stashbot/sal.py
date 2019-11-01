@@ -19,6 +19,8 @@
 import datetime
 import re
 import time
+
+import mastodon
 import twitter
 
 from . import acls
@@ -44,6 +46,7 @@ class Logger(object):
         self.ldap = ldap.Client(self.config["ldap"]["uri"], self.logger)
         self._cached_wikis = {}
         self._cached_twitter = {}
+        self._cached_mastodon = {}
         self._cached_projects = None
 
     def log(self, conn, event, doc, respond_to_channel=True):
@@ -180,6 +183,12 @@ class Logger(object):
                 self._tweet(bang, channel_conf)
             except Exception:
                 self.logger.exception("Error writing to twitter")
+
+        if "mastodon" in channel_conf:
+            try:
+                self._toot(bang, channel_conf)
+            except Exception:
+                self.logger.exception("Error writing to Mastodon")
 
     def _log_duplicate(self, conn, event, doc, **kwargs):
         if not kwargs:
@@ -331,6 +340,12 @@ class Logger(object):
         client = self._get_twitter_client(channel_conf["twitter"])
         client.PostUpdate(update)
 
+    def _toot(self, bang, channel_conf):
+        """Post a toot to Mastodon"""
+        update = ("%(nick)s: %(message)s" % bang)[:500]
+        client = self._get_mastodon_client(channel_conf["mastodon"])
+        client.toot(update)
+
     def _get_mediawiki_client(self, name):
         """Get a mediawiki client for the given name."""
         if name not in self._cached_wikis:
@@ -355,3 +370,15 @@ class Logger(object):
                 access_token_secret=conf["access_token_secret"],
             )
         return self._cached_twitter[name]
+
+    def _get_mastodon_client(self, name):
+        """Get a mastodon client."""
+        if name not in self._cached_mastodon:
+            conf = self.config["mastodon"][name]
+            self._cached_mastodon[name] = mastodon.Mastodon(
+                access_token=conf["access_token"],
+                api_base_url=conf["url"],
+                ratelimit_method="throw",
+                version_check_mode="none",
+            )
+        return self._cached_mastodon[name]
