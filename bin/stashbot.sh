@@ -9,7 +9,7 @@ POD_NAME=stashbot.bot
 CONFIG=etc/config-k8s.yaml
 
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
-VENV=${TOOL_DIR}/venv-k8s-py35
+VENV=${TOOL_DIR}/venv-k8s-py37
 if [[ -f ${VENV}/bin/activate ]]; then
     # Enable virtualenv
     source ${VENV}/bin/activate
@@ -38,13 +38,12 @@ case "$1" in
         # FIXME: wait for the pods to stop
         ;;
     restart)
-        echo "Restarting stashbot k8s deployment..."
-        $0 stop &&
-        $0 start
+        echo "Restarting stashbot pod..."
+        exec kubectl delete pod $(_get_pod)
         ;;
     status)
         echo "Active pods:"
-        kubectl get pods -l name=${POD_NAME}
+        exec kubectl get pods -l name=${POD_NAME}
         ;;
     tail)
         exec kubectl logs -f $(_get_pod)
