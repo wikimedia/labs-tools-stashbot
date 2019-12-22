@@ -15,8 +15,10 @@ if [[ -f ${VENV}/bin/activate ]]; then
     source ${VENV}/bin/activate
 fi
 
+KUBECTL=/usr/bin/kubectl
+
 _get_pod() {
-    kubectl get pods \
+    $KUBECTL get pods \
         --output=jsonpath={.items..metadata.name} \
         --selector=name=${POD_NAME}
 }
@@ -24,7 +26,7 @@ _get_pod() {
 case "$1" in
     start)
         echo "Starting stashbot k8s deployment..."
-        kubectl create -f ${TOOL_DIR}/etc/deployment.yaml
+        $KUBECTL create -f ${TOOL_DIR}/etc/deployment.yaml
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
@@ -34,19 +36,19 @@ case "$1" in
         ;;
     stop)
         echo "Stopping stashbot k8s deployment..."
-        kubectl delete deployment ${DEPLOYMENT}
+        $KUBECTL delete deployment ${DEPLOYMENT}
         # FIXME: wait for the pods to stop
         ;;
     restart)
         echo "Restarting stashbot pod..."
-        exec kubectl delete pod $(_get_pod)
+        exec $KUBECTL delete pod $(_get_pod)
         ;;
     status)
         echo "Active pods:"
-        exec kubectl get pods -l name=${POD_NAME}
+        exec $KUBECTL get pods -l name=${POD_NAME}
         ;;
     tail)
-        exec kubectl logs -f $(_get_pod)
+        exec $KUBECTL logs -f $(_get_pod)
         ;;
     update)
         echo "Updating git clone..."
@@ -57,7 +59,7 @@ case "$1" in
         ;;
     attach)
         echo "Attaching to pod..."
-        exec kubectl exec -i -t $(_get_pod) /bin/bash
+        exec $KUBECTL exec -i -t $(_get_pod) /bin/bash
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|status|tail|update|attach}"

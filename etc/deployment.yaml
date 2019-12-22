@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: stashbot.bot
+  namespace: tool-stashbot
   labels:
     name: stashbot.bot
     toolforge: tool
