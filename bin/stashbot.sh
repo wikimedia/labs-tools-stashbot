@@ -26,7 +26,7 @@ _get_pod() {
 case "$1" in
     start)
         echo "Starting stashbot k8s deployment..."
-        $KUBECTL create -f ${TOOL_DIR}/etc/deployment.yaml
+        $KUBECTL create --validate=true -f ${TOOL_DIR}/etc/deployment.yaml
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
@@ -59,7 +59,7 @@ case "$1" in
         ;;
     attach)
         echo "Attaching to pod..."
-        exec $KUBECTL exec -i -t $(_get_pod) /bin/bash
+        exec $KUBECTL exec -i -t $(_get_pod) -- /bin/bash
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|status|tail|update|attach}"
