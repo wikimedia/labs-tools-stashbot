@@ -148,9 +148,7 @@ class Stashbot(
     def do_write_to_elasticsearch(self, conn, event, doc):
         """Log an IRC channel message to Elasticsearch."""
         fmt = self.config["elasticsearch"]["index"]
-        self.es.index(
-            index=time.strftime(fmt, time.gmtime()), doc_type="irc", body=doc
-        )
+        self.es.index(index=time.strftime(fmt, time.gmtime()), body=doc)
 
     def do_help(self, conn, event):
         """Handle a help message request"""
@@ -177,7 +175,7 @@ class Stashbot(
         del bash["server"]
         del bash["host"]
 
-        ret = self.es.index(index="bash", doc_type="bash", body=bash)
+        ret = self.es.index(index="bash", body=bash)
 
         if "created" in ret and ret["created"] is True:
             self.respond(

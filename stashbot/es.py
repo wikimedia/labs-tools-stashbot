@@ -43,10 +43,10 @@ class Client(object):
             "host": event.source.host,
         }
 
-    def index(self, index, doc_type, body):
+    def index(self, index, body):
         """Store a document in Elasticsearch."""
         try:
-            return self.es.index(index=index, doc_type=doc_type, body=body)
+            return self.es.index(index=index, body=body)
         except elasticsearch.ConnectionError as e:
             self.logger.exception(
                 "Failed to log to elasticsearch: %s", e.error
