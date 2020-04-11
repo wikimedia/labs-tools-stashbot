@@ -260,7 +260,7 @@ class Logger(object):
 
     def _store_in_es(self, bang, do_phab=True):
         """Save a !log message to elasticsearch."""
-        ret = self.es.index(index="sal", doc_type="sal", body=bang)
+        ret = self.es.index(index="sal", body=bang)
         if (
             do_phab
             and "phab" in self.config["sal"]
