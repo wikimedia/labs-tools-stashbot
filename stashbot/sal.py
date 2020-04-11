@@ -264,8 +264,8 @@ class Logger(object):
         if (
             do_phab
             and "phab" in self.config["sal"]
-            and "created" in ret
-            and ret["created"] is True
+            and "result" in ret
+            and ret["result"] == "created"
         ):
             m = RE_PHAB.findall(bang["message"])
             msg = self.config["sal"]["phab"] % dict(
