@@ -177,7 +177,7 @@ class Stashbot(
 
         ret = self.es.index(index="bash", body=bash)
 
-        if "created" in ret and ret["created"] is True:
+        if "result" in ret and ret["result"] == "created":
             self.respond(
                 conn,
                 event,
