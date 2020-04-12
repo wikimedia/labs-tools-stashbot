@@ -271,7 +271,8 @@ class Logger(object):
             msg = self.config["sal"]["phab"] % dict(
                 {"href": self.config["sal"]["view_url"] % ret["_id"]}, **bang
             )
-            for task in m:
+            # T243843: De-duplicate task ids
+            for task in set(m):
                 try:
                     self.phab.comment(task, msg)
                 except Exception:
