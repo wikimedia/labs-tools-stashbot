@@ -109,7 +109,9 @@ bash:
 
 sal:
   view_url: https://tools.wmflabs.org/sal/log/%s
-  phab: "{nav icon=file, name=Mentioned in SAL, href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
+  # For available placeholders, refer to sal.py
+  # and look for Logger._store_in_es() and Logger.log()'s bang object.
+  phab: "{nav icon=file, name=Mentioned in SAL (%(project)), href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
   channels:
     '##somechan':
       project: someproject
