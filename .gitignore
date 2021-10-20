@@ -1,10 +1,12 @@
 *.pyc
 /.bash_history
+/.cache
 /.elasticsearch.ini
 /.kube
 /.lesshst
 /.python-version
 /.python_history
+/.toolskube
 /.tox
 /.viminfo
 /access.log
