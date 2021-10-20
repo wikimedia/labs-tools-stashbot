@@ -3,27 +3,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stashbot.bot
+  name: stashbot.libera
   namespace: tool-stashbot
   labels:
-    name: stashbot.bot
+    name: stashbot.libera
     toolforge: tool
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: stashbot.bot
+      name: stashbot.libera
       toolforge: tool
   template:
     metadata:
       labels:
-        name: stashbot.bot
+        name: stashbot.libera
         toolforge: tool
     spec:
       containers:
         - name: bot
           image: docker-registry.tools.wmflabs.org/toolforge-python37-sssd-base:latest
-          command: [ "/data/project/stashbot/bin/stashbot.sh", "run" ]
+          command:
+            - "/data/project/stashbot/bin/stashbot.sh"
+            - "run"
           workingDir: /data/project/stashbot
           env:
             - name: HOME

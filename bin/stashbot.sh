@@ -3,10 +3,10 @@
 
 set -e
 
-DEPLOYMENT=stashbot.bot
-POD_NAME=stashbot.bot
+DEPLOYMENT=stashbot.libera
+POD_NAME=stashbot.libera
 
-CONFIG=etc/config-k8s.yaml
+CONFIG=etc/config-libera.yaml
 
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
 VENV=${TOOL_DIR}/venv-k8s-py37
@@ -26,7 +26,7 @@ _get_pod() {
 case "$1" in
     start)
         echo "Starting stashbot k8s deployment..."
-        $KUBECTL create --validate=true -f ${TOOL_DIR}/etc/deployment.yaml
+        $KUBECTL create --validate=true -f ${TOOL_DIR}/etc/deployment-libera.yaml
         ;;
     run)
         date +%Y-%m-%dT%H:%M:%S
