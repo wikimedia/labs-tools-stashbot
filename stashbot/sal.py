@@ -150,6 +150,32 @@ class Logger(object):
                     message="!log %s" % bang["message"],
                 )
 
+            if bang["project"] in ["tools.paws", "tools.paws-public"]:
+                if respond_to_channel:
+                    self.irc.respond(
+                        conn,
+                        event,
+                        (
+                            '%s: SAL for "%s" is deprecated. '
+                            'Use "!log paws" instead.'
+                        )
+                        % (bang["nick"], bang["project"]),
+                    )
+                return
+
+            if bang["project"] in ["tools.quarry"]:
+                if respond_to_channel:
+                    self.irc.respond(
+                        conn,
+                        event,
+                        (
+                            '%s: SAL for "%s" is deprecated. '
+                            'Use "!log quarry" instead.'
+                        )
+                        % (bang["nick"], bang["project"]),
+                    )
+                return
+
         elif channel == "#wikimedia-operations":
             if "#releng" in bang["message"]:
                 self._log_duplicate(
