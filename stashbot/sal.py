@@ -150,11 +150,11 @@ class Logger(object):
                     message="!log %s" % bang["message"],
                 )
 
-            elif channel == "#wikimedia-operations":
-                if "#releng" in bang["message"]:
-                    self._log_duplicate(
-                        conn, event, bang, channel="#wikimedia-releng"
-                    )
+        elif channel == "#wikimedia-operations":
+            if "#releng" in bang["message"]:
+                self._log_duplicate(
+                    conn, event, bang, channel="#wikimedia-releng"
+                )
 
         self._store_in_es(bang, do_phab=respond_to_channel)
 
