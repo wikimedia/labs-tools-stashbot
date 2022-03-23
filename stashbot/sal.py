@@ -103,7 +103,7 @@ class Logger(object):
             # logmsgbot is expected to tell us who is running the command
             bang["nick"], bang["message"] = bang["message"].split(None, 1)
 
-        if channel in ["#wikimedia-labs", "#wikimedia-cloud"]:
+        if channel in ["#wikimedia-cloud-feed", "#wikimedia-cloud"]:
             parts = bang["message"].split(None, 1)
             if len(parts) < 2:
                 if respond_to_channel:
