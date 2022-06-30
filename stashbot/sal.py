@@ -50,9 +50,15 @@ class Logger(object):
         self._cached_projects = None
 
     def log(self, conn, event, doc, respond_to_channel=True):
-        """Process a !log message"""
+        """Process a !log message
+
+        The respond_to_channel parameter is not passed by the
+        main caller in bot.py, but rather is for internal use
+        by _log_duplicate().
+        """
         bang = dict(doc)
         channel = bang["channel"]
+        is_from_logmsgbot = bang["nick"] == "logmsgbot"
 
         channel_conf = self._get_sal_config(channel)
 
@@ -85,11 +91,13 @@ class Logger(object):
                 )
             return
 
-        # Trim '!log ' from the front of the message
-        bang["message"] = bang["message"][5:].strip()
         bang["type"] = "sal"
         bang["project"] = channel_conf["project"]
 
+        # Normalise the message
+        # - Strip '!log '
+        # - Strip logmsgbot nickname portion
+        bang["message"] = bang["message"][5:].strip()
         if bang["message"] == "":
             if respond_to_channel:
                 self.irc.respond(
@@ -98,8 +106,7 @@ class Logger(object):
                     "%s: Message missing. Nothing logged." % bang["nick"],
                 )
             return
-
-        if bang["nick"] == "logmsgbot":
+        if is_from_logmsgbot:
             # logmsgbot is expected to tell us who is running the command
             bang["nick"], bang["message"] = bang["message"].split(None, 1)
 
@@ -187,7 +194,10 @@ class Logger(object):
         if "wiki" in channel_conf:
             try:
                 url = self._write_to_wiki(bang, channel_conf)
-                if respond_to_channel:
+
+                # Reduce noise in channels by not making robots
+                # respond to each other.
+                if respond_to_channel and not is_from_logmsgbot:
                     self.irc.respond(
                         conn, event, "Logged the message at %s" % url
                     )
