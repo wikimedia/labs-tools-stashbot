@@ -30,7 +30,7 @@ from . import es
 from . import phab
 from . import sal
 
-RE_PHAB_NOURL = re.compile(r"(?:^|[^/%])\b([DMT]\d+)\b")
+RE_PHAB_NOURL = re.compile(r"(?:^|[^/%])\b([DMT]\d{3,})\b")
 
 
 class Stashbot(
