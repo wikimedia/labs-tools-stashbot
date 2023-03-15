@@ -22,9 +22,8 @@ expanded to support:
 Install
 -------
 ```
-$ virtualenv virtenv
-$ source virtenv/bin/activate
-$ pip install -r requirements.txt
+$ python3 -m venv venv
+$ venv/bin/pip3 install -r requirements.txt
 ```
 
 Configure
@@ -152,7 +151,7 @@ $ ./bin/stashbot.sh tail
 
 License
 -------
-[GNU GPLv3+](https://www.gnu.org/copyleft/gpl.html "GNU GPLv3+")
+[GPL-3.0-or-later](https://www.gnu.org/copyleft/gpl.html "GNU GPLv3+")
 
 Some code and much inspiration taken from:
 * [Adminbot](https://phabricator.wikimedia.org/diffusion/ODAC/)
