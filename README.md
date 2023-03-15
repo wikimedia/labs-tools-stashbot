@@ -29,10 +29,10 @@ $ pip install -r requirements.txt
 
 Configure
 ---------
-The bot is configured using a yaml file. By default `stashbot.py` will look
-for a configuration file named `config.yaml`. An alternate file can be
-provided using the `--config` cli argument. See `stashbot.py --help` for
-more information.
+The bot is configured using a yaml file. By default `python3 -m stashbot` will
+look for a configuration file named `config.yaml`. An alternate file can be
+provided using the `--config` cli argument. See `python3 -m stashbot --help`
+for more information.
 
 Example configuration:
 ```

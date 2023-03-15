@@ -32,7 +32,7 @@ case "$1" in
         date +%Y-%m-%dT%H:%M:%S
         echo "Running stashbot..."
         cd ${TOOL_DIR}
-        exec python stashbot.py --config ${CONFIG}
+        exec python -m stashbot --config ${CONFIG}
         ;;
     stop)
         echo "Stopping stashbot k8s deployment..."
