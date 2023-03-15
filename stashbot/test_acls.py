@@ -15,38 +15,40 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from . import acls
 import irc.client
 
+import pytest
 
-def test_check():
-    common_rules = {"allow": ["*!*@test/allowed"], "deny": ["*!*@test/denied"]}
-    tests = [
+from . import acls
+
+
+COMMON_RULES = {"allow": ["*!*@test/allowed"], "deny": ["*!*@test/denied"]}
+
+
+@pytest.mark.parametrize(
+    "config,source,expect",
+    [
         [{}, "nick!user@host", True],
-        [common_rules, "nick!user@host", True],
-        [common_rules, "nick!user@test/allowed", True],
-        [dict(common_rules, default=False), "nick!~user@test/allowed", True],
+        [COMMON_RULES, "nick!user@host", True],
+        [COMMON_RULES, "nick!user@test/allowed", True],
+        [dict(COMMON_RULES, default=False), "nick!~user@test/allowed", True],
         [{"default": False}, "nick!user@host", False],
-        [common_rules, "nick!user@test/denied", False],
+        [COMMON_RULES, "nick!user@test/denied", False],
         [
-            dict(common_rules, allow=[], default=False),
+            dict(COMMON_RULES, allow=[], default=False),
             "nick!user@test/allowed",
             False,
         ],
-    ]
-    for args in tests:
-        yield run_check, args[0], args[1], args[2]
-
-
-def run_check(config, source, expect):
+    ],
+)
+def test_check(config, source, expect):
     source = irc.client.NickMask(source)
     assert expect == acls.check(config, source)
 
 
-def test_check_mask():
-    source = irc.client.NickMask("nick!user@host")
-    tests = [
+@pytest.mark.parametrize(
+    "mask,expect",
+    [
         ["nick!user@host", True],
         ["*!user@host", True],
         ["*!*user@host", True],
@@ -54,10 +56,8 @@ def test_check_mask():
         ["*!*@*", True],
         ["*!*user@*", True],
         ["*!user@host2", False],
-    ]
-    for args in tests:
-        yield run_check_mask, args[0], source, args[1]
-
-
-def run_check_mask(mask, source, expect):
+    ],
+)
+def test_check_mask(mask, expect):
+    source = irc.client.NickMask("nick!user@host")
     assert expect == acls.check_mask(mask, source)

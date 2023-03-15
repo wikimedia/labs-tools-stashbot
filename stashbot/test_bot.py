@@ -15,25 +15,24 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <http://www.gnu.org/licenses/>.
+import pytest
 
 from . import bot
 
 
-def test_RE_PHAB_NOURL():
-    tests = (
-        ("T1", False),
-        ("T12", False),
-        ("T123", True),
-        ("T1234", True),
-        ("https://phabricator.wikimedia.org/T325381", False),
-        ("/T325381", False),
-        ("[[phab:T325381]]", True),
-        ("2022-12-16T19:00", False),
-    )
-    for args in tests:
-        yield run_RE_PHAB_NOURL, args[0], args[1]
-
-
-def run_RE_PHAB_NOURL(text, expect):
+@pytest.mark.parametrize(
+    "text,expect",
+    [
+        ["T1", False],
+        ["T12", False],
+        ["T123", True],
+        ["T1234", True],
+        ["https://phabricator.wikimedia.org/T325381", False],
+        ["/T325381", False],
+        ["[[phab:T325381]]", True],
+        ["2022-12-16T19:00", False],
+    ],
+)
+def test_RE_PHAB_NOURL(text, expect):
     match = bot.RE_PHAB_NOURL.search(text) is not None
     assert expect == match, "{} != {}".format(expect, match)
