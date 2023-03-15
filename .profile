@@ -7,5 +7,4 @@ alias ll='ls -l'
 LESS=-FiQRwX
 export LESS
 
-alias kubectl=/usr/bin/kubectl
-source <(kubectl completion bash)
+which kubectl >/dev/null 2>&1 && source <(kubectl completion bash)
