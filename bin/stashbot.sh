@@ -9,7 +9,7 @@ POD_NAME=stashbot.libera
 CONFIG=etc/config-libera.yaml
 
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
-VENV=${TOOL_DIR}/venv-k8s-py37
+VENV=${TOOL_DIR}/venv-k8s-py39
 if [[ -f ${VENV}/bin/activate ]]; then
     # Enable virtualenv
     source ${VENV}/bin/activate
@@ -32,7 +32,7 @@ case "$1" in
         date +%Y-%m-%dT%H:%M:%S
         echo "Running stashbot..."
         cd ${TOOL_DIR}
-        exec python -m stashbot --config ${CONFIG}
+        exec python3 -m stashbot --config ${CONFIG}
         ;;
     stop)
         echo "Stopping stashbot k8s deployment..."

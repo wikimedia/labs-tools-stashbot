@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: bot
-          image: docker-registry.tools.wmflabs.org/toolforge-python37-sssd-base:latest
+          image: docker-registry.tools.wmflabs.org/toolforge-python39-sssd-base:latest
           command:
             - "/data/project/stashbot/bin/stashbot.sh"
             - "run"
