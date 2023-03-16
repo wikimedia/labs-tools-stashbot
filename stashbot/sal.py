@@ -381,7 +381,7 @@ class Logger(object):
         """Post a toot to Mastodon"""
         update = ("%(nick)s: %(message)s" % bang)[:500]
         client = self._get_mastodon_client(channel_conf["mastodon"])
-        client.toot(update)
+        client.status_post(update, visibility="unlisted")
 
     def _get_mediawiki_client(self, name):
         """Get a mediawiki client for the given name."""
