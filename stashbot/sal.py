@@ -58,7 +58,7 @@ class Logger(object):
         """
         bang = dict(doc)
         channel = bang["channel"]
-        is_from_logmsgbot = bang["nick"] == "logmsgbot"
+        is_from_logmsgbot = bang["nick"] in {"logmsgbot", "logmsgbot_cloud"}
 
         channel_conf = self._get_sal_config(channel)
 
