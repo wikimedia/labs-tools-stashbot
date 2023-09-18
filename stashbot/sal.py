@@ -59,6 +59,7 @@ class Logger(object):
         bang = dict(doc)
         channel = bang["channel"]
         is_from_logmsgbot = bang["nick"] in {"logmsgbot", "logmsgbot_cloud"}
+        is_from_wmbot = bang["nick"] in {"wm-bot", "wm-bot2"}
 
         channel_conf = self._get_sal_config(channel)
 
@@ -95,8 +96,8 @@ class Logger(object):
         bang["project"] = channel_conf["project"]
 
         # Normalise the message
+
         # - Strip '!log '
-        # - Strip logmsgbot nickname portion
         bang["message"] = bang["message"][5:].strip()
         if bang["message"] == "":
             if respond_to_channel:
@@ -106,10 +107,19 @@ class Logger(object):
                     "%s: Message missing. Nothing logged." % bang["nick"],
                 )
             return
-        if is_from_logmsgbot:
-            # logmsgbot is expected to tell us who is running the command
-            bang["nick"], bang["message"] = bang["message"].split(None, 1)
 
+        # - Strip 'user@host' portion
+        parts = bang["message"].split(None, 1)
+        if len(parts) > 1 and re.match(r"\w+@\w+", parts[0]):
+            if is_from_logmsgbot:
+                # we trust messages coming from logmsgbot
+                bang["nick"], bang["message"] = parts
+            if is_from_wmbot:
+                # wm-bot can be easily spoofed, so we add a "wmbot~" prefix
+                bang["nick"] = "wmbot~%s" % parts[0]
+                bang["message"] = parts[1]
+
+        # - Strip 'project' portion
         if channel in ["#wikimedia-cloud-feed", "#wikimedia-cloud"]:
             parts = bang["message"].split(None, 1)
             if len(parts) < 2:
