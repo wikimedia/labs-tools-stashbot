@@ -201,7 +201,7 @@ class Stashbot(
         channel = event.target
         now = time.time()
         cutoff = self.get_phab_echo_cutoff(channel)
-        for label in set(RE_PHAB_NOURL.findall(doc["message"])):
+        for label in RE_PHAB_NOURL.findall(doc["message"]):
             if label in self.recent_phab[channel]:
                 if self.recent_phab[channel][label] > cutoff:
                     # Don't spam a channel with links
