@@ -16,7 +16,6 @@ expanded to support:
 - Providing summary information for Phabricator manifest, differential, and
   pholio objects mentioned in irc messages
 - Writing `!log` messages to a MediaWiki wiki
-- Posting `!log` messages to Twitter
 - Posting `!log` messages to Mastodon
 
 Install
@@ -91,13 +90,6 @@ mediawiki:
     access_token: 33333333333333333333333333333333
     access_secret: 4444444444444444444444444444444444444444
 
-twitter:
-  wikimedia_sal:
-    consumer_key: aaaa
-    consumer_secret: bbbb
-    access_token_key: cccc
-    access_token_secret: dddd
-
 mastodon:
   wikimedia_sal:
     url: https://fosstodon.org
@@ -132,7 +124,6 @@ sal:
             - *!*jerk@*.domain
     '##otherchan':
       use_config: '##somechan'
-      twitter: wikimedia_sal
       mastodon: wikimedia_sal
 ```
 

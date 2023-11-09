@@ -21,7 +21,6 @@ import re
 import time
 
 import mastodon
-import twitter
 
 from . import acls
 from . import ldap
@@ -45,7 +44,6 @@ class Logger(object):
 
         self.ldap = ldap.Client(self.config["ldap"]["uri"], self.logger)
         self._cached_wikis = {}
-        self._cached_twitter = {}
         self._cached_mastodon = {}
         self._cached_projects = None
 
@@ -214,12 +212,6 @@ class Logger(object):
                         % bang["nick"],
                     )
 
-        if "twitter" in channel_conf:
-            try:
-                self._tweet(bang, channel_conf)
-            except Exception:
-                self.logger.exception("Error writing to twitter")
-
         if "mastodon" in channel_conf:
             try:
                 self._toot(bang, channel_conf)
@@ -371,12 +363,6 @@ class Logger(object):
         resp = page.save("\n".join(lines), summary=summary, bot=True)
         return site.get_url_for_revision(resp["newrevid"])
 
-    def _tweet(self, bang, channel_conf):
-        """Post a tweet."""
-        update = ("%(nick)s: %(message)s" % bang)[:280]
-        client = self._get_twitter_client(channel_conf["twitter"])
-        client.PostUpdate(update)
-
     def _toot(self, bang, channel_conf):
         """Post a toot to Mastodon"""
         update = ("%(nick)s: %(message)s" % bang)[:500]
@@ -395,18 +381,6 @@ class Logger(object):
                 access_secret=conf["access_secret"],
             )
         return self._cached_wikis[name]
-
-    def _get_twitter_client(self, name):
-        """Get a twitter client."""
-        if name not in self._cached_twitter:
-            conf = self.config["twitter"][name]
-            self._cached_twitter[name] = twitter.Api(
-                consumer_key=conf["consumer_key"],
-                consumer_secret=conf["consumer_secret"],
-                access_token_key=conf["access_token_key"],
-                access_token_secret=conf["access_token_secret"],
-            )
-        return self._cached_twitter[name]
 
     def _get_mastodon_client(self, name):
         """Get a mastodon client."""
