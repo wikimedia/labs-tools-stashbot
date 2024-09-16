@@ -108,7 +108,7 @@ class Logger(object):
 
         # - Strip 'user@host' portion
         parts = bang["message"].split(None, 1)
-        if len(parts) > 1 and re.match(r"\w+@\w+", parts[0]):
+        if len(parts) > 1 and re.fullmatch(r"[^@]+@.+", parts[0]):
             if is_from_logmsgbot:
                 # we trust messages coming from logmsgbot
                 bang["nick"], bang["message"] = parts
