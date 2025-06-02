@@ -45,22 +45,26 @@ class Client(object):
         if label in r:
             obj = r[label]
             if obj["type"] == "TASK":
-                # T180081: Ensure that we don't leak information about
-                # security tasks even if the bot somehow has access to the
-                # task.
+                # T180081, T301082: Ensure that we don't leak information
+                # about non-public tasks even if the bot somehow has access
+                # to the task.
                 info = self.taskDetails(obj["phid"])
-                aux = info.get("auxiliary", {})
-                st = aux.get("std:maniphest:security_topic")
-                if st and st != "default":
-                    raise Exception("Task %s is a security bug." % label)
+                fields = info.get("fields", {})
+                policies = fields.get("policy", {})
+                view_policy = policies.get("view", "MISSING")
+                if view_policy != "public":
+                    raise Exception(
+                        "Task %s is not public: %s" % (label, view_policy)
+                    )
             return obj
         raise Exception("No object found for %s" % label)
 
     def taskDetails(self, phid):
         """Lookup details of a Maniphest task."""
-        r = self.post("maniphest.query", {"phids": [phid]})
-        if phid in r:
-            return r[phid]
+        r = self.post("maniphest.search", {"constraints": {"phids": [phid]}})
+        for obj in r["data"]:
+            if obj["phid"] == phid:
+                return obj
         raise Exception("No task found for phid %s" % phid)
 
     def comment(self, task, comment):
