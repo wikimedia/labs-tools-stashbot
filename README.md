@@ -36,7 +36,7 @@ Example configuration:
 ```
 ---
 irc:
-  server: chat.freenode.net
+  server: irc.libera.chat
   port: 6697
   nick: mybotnick
   realname: My Real Name
@@ -49,9 +49,7 @@ irc:
 
 elasticsearch:
   servers:
-    - tools-elastic-01.tools.eqiad.wmflabs
-    - tools-elastic-02.tools.eqiad.wmflabs
-    - tools-elastic-03.tools.eqiad.wmflabs
+    - opensearch.svc.tools.eqiad1.wikimedia.cloud
   options:
     port: 80
     http_auth:
@@ -62,7 +60,7 @@ elasticsearch:
   index: 'irc-%Y.%m'
 
 ldap:
-  uri: ldap://ldap-labs.eqiad.wikimedia.org:389
+  uri: ldaps://ldap-ro.eqiad.wikimedia.org:636
   base: dc=wikimedia,dc=org
 
 phab:
@@ -96,10 +94,10 @@ mastodon:
     access_token: cccc
 
 bash:
-  view_url: https://tools.wmflabs.org/bash/quip/%s
+  view_url: https://bash.toolforge.org/quip/%s
 
 sal:
-  view_url: https://tools.wmflabs.org/sal/log/%s
+  view_url: https://sal.toolforge.org/log/%s
   # For available placeholders, refer to sal.py
   # and look for Logger._store_in_es() and Logger.log()'s bang object.
   phab: "{nav icon=file, name=Mentioned in SAL (%(project)), href=%(href)s} [%(@timestamp)s] <%(nick)s> %(message)s"
